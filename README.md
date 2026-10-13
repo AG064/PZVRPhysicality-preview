@@ -1,5 +1,7 @@
 # PZVR Physicality preview
 
+> **Preview warning:** Multiplayer support is planned. This preview may currently be unstable or unplayable.
+
 Single-player physical item, food, utensil, storage and body interactions for released PZVR and Project Viewpoint. The extension preserves native item identities, inventory ownership, quantities, recipes and original action completion. PZVR continues to own OpenXR, movement, menus, native hand grasps and melee; Viewpoint continues to own rendering.
 
 This is the standalone Physicality extension. Enable it alongside the original dependencies listed in [DEPENDENCIES.md](DEPENDENCIES.md). The earlier experimental ProjectViewpointVR runtime is a separate project and must not be enabled alongside this preview.
@@ -45,6 +47,8 @@ Collision and visual coverage follows the actual supplied model and geometry pro
 The release carries an allowlisted package, exact SDK/library pins, offline regression results and standalone graphics/solver evidence. PUBLIC-READBACK.json identifies the archive and classes without publishing local SDK paths, private assets, saves, logs or configuration. The live checklist establishes headset startup, actual controller behavior, visual quality, naturalness, performance and native gameplay parity.
 
 Physicality's physical actions target single-player. Their multiplayer guards remain enabled. Upstream PZVR multiplayer behavior is separate from this extension's physical transaction coverage.
+
+Publication copy note: This main-branch README was updated after the v0.1.16-preview freeze. The README hash in PUBLIC-READBACK.json refers to the original release copy; release assets and the frozen tag remain unchanged.
 
 ## Source and attribution
 
