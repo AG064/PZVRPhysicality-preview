@@ -1,0 +1,12 @@
+[package]
+name = "pzvr-physics"
+edition = "2024"
+version = "0.1.0"
+license = "MIT"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+rapier3d = { version = "=0.30.1", features = ["enhanced-determinism"] }
+jni = "=0.21.1"

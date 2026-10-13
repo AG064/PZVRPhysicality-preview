@@ -1,0 +1,50 @@
+package pzvrphysicality;
+
+import java.util.*;import local.pzvr.*;import zombie.characters.IsoPlayer;import zombie.characters.CharacterTimedActions.LuaTimedActionNew;import zombie.iso.objects.IsoCurtain;
+
+/** A reachable cloth grip and pull requests one original SP curtain action. */
+public final class NativeCurtains {
+ public record Request(long ticket,int side,IsoPlayer actor,IsoCurtain source,long epoch,boolean beforeOpen,boolean desiredOpen,long created){}
+ private static final CurtainCapture capture=new CurtainCapture();private static final CurtainPolicy<IsoCurtain> policy=new CurtainPolicy<>();
+ private static final CurtainCapture.Target[] held=new CurtainCapture.Target[2];private static final ContactFrame.Point[] anchors=new ContactFrame.Point[2];
+ private static List<CurtainCapture.Target> targets=List.of();private static boolean enabled;private static IsoPlayer actor;private static long epoch=1,sequence,rigGeneration=-1,nextDiscovery,retryAt;private static Request pending,active;private static long activeSince;private static String detail="Physical curtains Off";
+ public static synchronized void configure(boolean value)throws Exception{if(value){if(!Main.ready())throw new IllegalStateException("SDK validation pending");capture.verify();}if(enabled!=value){enabled=value;reset();}WorldRigCapture.requestCurtains(value);detail=value?"Touch an actual cloth edge with an empty hand, grip and pull sideways 10 cm":"Physical curtains Off";}
+ public static synchronized String status(){return detail+"; "+capture.status();}
+ public static synchronized boolean enabled(){return enabled;}
+ public static synchronized boolean available(){try{capture.verify();return true;}catch(Exception|LinkageError unavailable){return false;}}
+ private static void reset(){policy.reset();Arrays.fill(held,null);Arrays.fill(anchors,null);pending=active=null;actor=null;targets=List.of();capture.clear();rigGeneration=-1;nextDiscovery=retryAt=0;if(epoch>=9_007_199_254_740_991L)throw new IllegalStateException("Curtain epoch exhausted");epoch++;}
+ private static IsoPlayer player(){return IsoPlayer.players.length==0?null:IsoPlayer.players[0];}
+ private static boolean eligible(IsoPlayer p,WorldRigFrame rig,long now,boolean action){var input=Engine.latestInput;return enabled&&Main.ready()&&p!=null&&p==player()&&!p.isDead()&&p.getVehicle()==null&&p.getSquare()!=null&&p.getCell()!=null&&Engine.active()&&Engine.worldPresent&&!zombie.network.GameClient.client&&!zombie.network.GameServer.server&&!zombie.GameTime.isGamePaused()&&!VrApi.fullHud()&&!VrApi.pointerActive()&&!zombie.ui.UIManager.isModalVisible()&&!zombie.core.Core.getInstance().isDoingTextEntry()&&(action||!p.hasTimedActions())&&NativeItems.supportsPhysicalGestures(p)&&rig!=null&&rig.actor()==p&&rig.fresh(now)&&input!=null&&input.focused()&&input.time()>=rig.inputTime()&&input.time()-rig.inputTime()<150_000_000L;}
+ private static boolean tracked(int side){var input=Engine.latestInput;if(input==null||!input.focused())return false;var hand=side==0?input.left():input.right();return hand!=null&&hand.tracked()&&hand.grip()!=null;}
+ private static boolean grip(int side){var input=Engine.latestInput;var hand=input==null?null:side==0?input.left():input.right();return hand!=null&&hand.down(XrBackend.GRIP);}
+ private static boolean prior(int side){return NativeBody.ownsGrip(side)||NativeBody.request()!=null||NativeItems.gestureBusy(side)||NativeItems.request()!=null||NativeConsumption.request()!=null||NativeConsumption.bite()!=null||NativeTaps.busy()||NativeCrafting.request()!=null;}
+ private static CurtainCapture.Target nearest(IsoPlayer p,WorldRigFrame rig,int side,boolean save){var hand=rig.hand(side);if(hand==null||NativeItems.hand(p,side)!=null||prior(side))return null;CurtainCapture.Target best=null;ContactFrame.Point anchor=null;double distance=Double.POSITIVE_INFINITY;boolean tied=false;for(var target:targets){if(!capture.current(target,p))continue;var point=capture.touch(target,hand);if(point==null||!capture.clearSegment(p,rig.mouth(),point))continue;double value=hand.grip().distance(point);if(value<distance-.0001*hand.units()){best=target;anchor=point;distance=value;tied=false;}else if(Math.abs(value-distance)<=.0001*hand.units())tied=true;}if(tied){best=null;anchor=null;}if(save)anchors[side]=anchor;return best;}
+ private static boolean reachable(IsoPlayer p,WorldRigFrame rig,int side,CurtainCapture.Target target){var hand=rig.hand(side);var anchor=anchors[side];return hand!=null&&anchor!=null&&tracked(side)&&NativeItems.hand(p,side)==null&&capture.current(target,p)&&hand.grip().distance(anchor)<=.35*hand.units()&&capture.clearSegment(p,rig.mouth(),anchor)&&capture.clearSegment(p,anchor,hand.grip());}
+ public static synchronized void tick(){
+  if(!enabled)return;var p=player();var rig=WorldRigCapture.latest;long now=System.nanoTime();if(p!=actor){reset();actor=p;}
+  if(!eligible(p,rig,now,active!=null)){reset();actor=p;detail="Physical curtains waiting for active tracked single-player hands";return;}
+  if(rigGeneration!=rig.generation()){policy.reset();Arrays.fill(held,null);Arrays.fill(anchors,null);pending=active=null;targets=List.of();rigGeneration=rig.generation();epoch++;nextDiscovery=0;}
+  if(pending!=null&&now-pending.created()>500_000_000L){retire(pending.side());pending=null;detail="Curtain request expired";}
+  if(active!=null&&now-activeSince>3_000_000_000L){retire(active.side());active=null;detail="Native curtain action expired";}
+  if(active!=null||pending!=null){var r=active!=null?active:pending;if(!ownAction(p,r.ticket())||!reachable(p,rig,r.side(),held[r.side()])){retire(r.side());pending=active=null;}return;}
+  if(now>=nextDiscovery){targets=capture.nearby(p);nextDiscovery=now+200_000_000L;}
+  for(int side=0;side<2;side++){var hand=rig.hand(side);if(hand==null||!tracked(side)||prior(side)||NativeItems.hand(p,side)!=null||now<retryAt){retire(side);continue;}var target=held[side];if(target==null)target=nearest(p,rig,side,true);boolean contact=target!=null&&capture.touch(target,hand)!=null;
+   if(target!=null&&held[side]!=null&&!reachable(p,rig,side,target)){retire(side);continue;}
+   var point=new CurtainPolicy.Point(hand.grip().x(),hand.grip().y(),hand.grip().height());var intent=policy.sample(side,target==null?null:target.source(),target==null?null:target.data(),target!=null&&target.open(),target!=null&&target.data().north,point,hand.units(),contact,grip(side),true,now);
+   if(policy.holds(side)&&held[side]==null)held[side]=target;if(!policy.holds(side)){held[side]=null;anchors[side]=null;}
+   if(intent!=null){if(sequence>=9_007_199_254_740_991L)throw new IllegalStateException("Curtain ticket exhausted");pending=new Request(++sequence,side,p,intent.owner(),epoch,intent.beforeOpen(),intent.desiredOpen(),now);detail=intent.desiredOpen()?"Native curtain opening requested":"Native curtain closing requested";break;}
+  }
+ }
+ private static void retire(int side){policy.release(side);held[side]=null;anchors[side]=null;}
+ public static synchronized Request request(){return pending;}
+ private static boolean ownAction(IsoPlayer p,long ticket){if(p==null)return false;if(!p.hasTimedActions())return true;var actions=p.getCharacterActions();if(actions==null||actions.isEmpty()||!(actions.getFirst() instanceof LuaTimedActionNew action)||action.getTable()==null)return false;Object value=action.getTable().rawget("pzvrCurtainTicket");return value instanceof Number number&&number.doubleValue()==ticket;}
+ public static synchronized boolean acknowledge(long ticket,boolean queued){var r=pending;if(r==null||r.ticket()!=ticket)return false;if(queued&&!valid(ticket,r.epoch()))return false;pending=null;if(queued){active=r;activeSince=System.nanoTime();}else{retire(r.side());retryAt=System.nanoTime()+250_000_000L;}return true;}
+ public static synchronized boolean valid(long ticket,long generation){var r=active!=null&&active.ticket()==ticket?active:pending!=null&&pending.ticket()==ticket?pending:null;long now=System.nanoTime();var p=player();var rig=WorldRigCapture.latest;long timeout=active==r?3_000_000_000L:500_000_000L;if(r==null||generation!=epoch||r.epoch()!=generation||r.actor()!=p||rig==null||rig.generation()!=rigGeneration||held[r.side()]==null||r.source()!=held[r.side()].source()||r.source().IsOpen()!=r.beforeOpen()||now<r.created()||now-r.created()>timeout||!ownAction(p,ticket)||!eligible(p,rig,now,true))return false;return reachable(p,rig,r.side(),held[r.side()])&&!NativeItems.gestureBusy(r.side())&&NativeItems.request()==null&&NativeBody.request()==null&&NativeConsumption.request()==null&&NativeConsumption.bite()==null&&!NativeTaps.busy()&&NativeCrafting.request()==null;}
+ public static synchronized void finish(long ticket,boolean actionSucceeded){var r=active;if(r==null||r.ticket()!=ticket)return;var target=held[r.side()];boolean changed=actionSucceeded&&r.actor()==player()&&target!=null&&r.source().getSquare()==target.square()&&r.source().getObjectIndex()>=0&&r.source().getObjectAttachedTo()==target.attached()&&r.source().IsOpen()==r.desiredOpen();detail=changed?(r.desiredOpen()?"Native curtain opened":"Native curtain closed"):"Native curtain action retired";active=null;retire(r.side());retryAt=System.nanoTime()+250_000_000L;}
+ public static synchronized boolean busy(){return enabled&&(pending!=null||active!=null||policy.holds(0)||policy.holds(1));}
+ public static synchronized boolean reservesGrip(int side){if(side<0||side>1||!enabled)return false;long now=System.nanoTime();var p=player();var rig=WorldRigCapture.latest;return eligible(p,rig,now,active!=null)&&held[side]!=null&&reachable(p,rig,side,held[side]);}
+ public static synchronized boolean ownsGrip(int side){if(reservesGrip(side))return true;if(side<0||side>1||!enabled||held[side]!=null)return false;long now=System.nanoTime();var p=player();var rig=WorldRigCapture.latest;return eligible(p,rig,now,false)&&tracked(side)&&nearest(p,rig,side,false)!=null;}
+ public static boolean ownsTrigger(int side){return false;}
+ static CurtainCapture captureForTest(){return capture;}
+ private NativeCurtains(){}
+}

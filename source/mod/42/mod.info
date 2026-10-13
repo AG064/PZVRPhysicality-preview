@@ -1,0 +1,13 @@
+name=PZVR Physicality Preview
+id=PZVRPhysicality
+author=AG064
+modversion=0.1.16-local
+versionMin=42.21.0
+versionMax=42.21.0
+require=\ZombieBuddy,\Viewpoint,\PZVR,\ProjectViewpointShelves
+loadModAfter=PZVR
+javaJarFile=media/java/client/PZVRPhysicality.jar
+javaPkgName=pzvrphysicality
+ZBVersionMin=2.3.4
+ZBVersionMax=2.3.4
+description=Single-player preview for native item physics, eating/drinking, visible utensil portions, storage, backpack contents, body gear, curtains, crafting access, held prop contact feedback and captured world collision. Touch contacts and analog finger estimates preserve native held grasps. Supports calibrated rigid models and original native actions, quantities and ownership. Individual Mod Options and Presentation/Comfort/Native controls presets remain editable. Features start Off in normal profiles. See the included live acceptance checklist and dependency notes.
