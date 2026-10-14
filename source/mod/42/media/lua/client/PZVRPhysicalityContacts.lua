@@ -3,7 +3,7 @@ require 'PZAPI/ModOptions'
 local page=PZAPI.ModOptions:create('PZVRPhysicalityContacts','PZVR Held Prop Contacts')
 local enabled=page:addTickBox('enabled','Physical contact feedback for held props',false,
     'Uses actual captured rigid prop meshes and supported world geometry. Native weapon support, action previews and controller poses retain priority. Single-player only.')
-local frequency=page:addSlider('frequency','Contact feedback frequency (%)',0,100,1,100,
+local frequency=page:addSlider('frequency','Contact feedback frequency (percent)',0,100,1,100,
     'Controls how often contact pulses can occur. Zero mutes this feedback. Native haptic amplitude and the upstream haptics preference stay authoritative.')
 local constrained=page:addTickBox('visualConstraints','Limit shallow held prop penetration',true,
     'Applies a bounded same-frame correction to the supported prop and its visible hand together. Native weapons, previews and active physical actions retain their original poses.')

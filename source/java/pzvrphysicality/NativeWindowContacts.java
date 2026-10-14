@@ -32,7 +32,7 @@ public final class NativeWindowContacts {
  private Object surface(IsoWindow window)throws ReflectiveOperationException{
   synchronized(api){if(!Boolean.TRUE.equals(has.invoke(null,window.getSprite())))return null;return ((Map<?,?>)surfaces.get(null)).get(window.getSprite());}
  }
- private static boolean glass(IsoWindow window){return !window.IsOpen()&&!window.isSmashed()&&!window.isGlassRemoved()&&!window.isDestroyed();}
+ private static boolean glass(IsoWindow window){return NativeWindowGeometry.intactGlass(window.IsOpen(),window.isSmashed(),window.isGlassRemoved(),window.isDestroyed());}
  public List<PhysicalWorld.Static> sample(IsoPlayer player){
   if(thread!=null&&thread!=Thread.currentThread())return List.of();
   if(thread==null)thread=Thread.currentThread();owned.clear();count=glazed=missing=skipped=rebuilds=0;
@@ -58,7 +58,7 @@ public final class NativeWindowContacts {
       var data=new NativeWindowGeometry.Data(n,p,m,a,b);old=new Cached(actual,data,NativeWindowGeometry.window(data,false),NativeWindowGeometry.window(data,true));
       if(cache.size()>=64&&!cache.containsKey(window))cache.clear();cache.put(window,old);rebuilds++;
      }
-     boolean closed=glass(window);var shape=closed?old.glazed:old.frame;if(shape==null){missing++;continue;}
+     boolean closed=glass(window);var motion=WindowMotion.publication(window);var shape=motion!=null?motion.shape():closed?old.glazed:old.frame;if(shape==null){missing++;continue;}
      int faces=shape.faces().length/3;if(triangles+faces>24000){skipped++;continue;}
      float rise=WorldMesher.rise(window);if(!Float.isFinite(rise)||Math.abs(rise)>.5f)throw new IllegalArgumentException("Window rise");
      result.add(new PhysicalWorld.Static("window:"+square.getX()+":"+square.getY()+":"+z+":"+index,shape,RigidPhysics.pose(square.getX()+.5f,square.getY()+.5f,(float)(square.getZ()*Math.sqrt(6))+rise)));

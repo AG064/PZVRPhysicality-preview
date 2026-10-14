@@ -1,0 +1,1 @@
+package zombie.core.skinnedmodel.model;public final class SkinningData {public final java.util.HashMap<String,Integer> boneIndices=new java.util.HashMap<>();public final java.util.List<Integer> skeletonHierarchy=new java.util.ArrayList<>();}

@@ -1,0 +1,1 @@
+package local.pzvr;public final class Engine {public static XrBackend.Frame latestInput;public static boolean worldPresent=true,enabled=true;public static double playspaceYaw;public static Object origin=new Object();public static boolean active(){return enabled;}public static Math3.Pose trackingOrigin(){return originPose;}public static Math3.Pose originPose;}

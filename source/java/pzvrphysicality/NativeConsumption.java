@@ -6,11 +6,12 @@ import local.pzvr.*;import zombie.characters.IsoPlayer;import zombie.inventory.I
 public final class NativeConsumption {
  private static final ConsumePolicy<InventoryItem> policy=new ConsumePolicy<>();
  private static final UtensilPolicy<InventoryItem> utensils=new UtensilPolicy<>();
+ private static final Object depthConsumer=new Object();
  private static volatile boolean enabled,requireTrigger=true;private static volatile double mouthDown=.11,radius=.105;
  private static IsoPlayer actor;private static long generation;private static String status="Physical eating and drinking Off";
  public static void configure(boolean value,boolean trigger,double down,double distance){
   if(!Double.isFinite(down)||down<.04||down>.2||!Double.isFinite(distance)||distance<.05||distance>.16)throw new IllegalArgumentException("Mouth calibration");
-  enabled=value;requireTrigger=trigger;mouthDown=down;radius=distance;policy.reset();utensils.reset();UtensilCapture.clear();WorldRigCapture.requestUtensils(value);actor=null;generation++;
+  AuthoredDepth.request(depthConsumer,value);enabled=value;requireTrigger=trigger;mouthDown=down;radius=distance;policy.reset();utensils.reset();UtensilCapture.clear();WorldRigCapture.requestUtensils(value);actor=null;generation++;
   status=value?"Physical eating/drinking armed; move items away from mouth first":"Physical eating and drinking Off";
  }
  private static IsoPlayer player(){return IsoPlayer.players.length==0?null:IsoPlayer.players[0];}

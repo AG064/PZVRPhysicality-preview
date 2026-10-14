@@ -47,8 +47,8 @@ public final class NativeStorage {
   var player=IsoPlayer.players.length==0?null:IsoPlayer.players[0];var parent=container==null?null:container.getParent();var square=parent==null?null:parent.getSquare();
   return Main.ready()&&!zombie.network.GameServer.server&&player!=null&&!player.isDead()&&player.getVehicle()==null&&player.getSquare()!=null&&square!=null
    &&container.getContainingItem()==null&&container.isExplored()&&parent.getContainerIndex(container)>=0&&square.getObjects().contains(parent)
-   &&player.getCell().getGridSquare(square.getX(),square.getY(),square.getZ())==square
-   &&square.isAdjacentTo(player.getSquare())&&!square.isBlockedTo(player.getSquare())&&zombie.iso.areas.SafeHouse.isSafehouseAllowLoot(square,player);
+   &&player.getCell()!=null&&player.getCell().getGridSquare(square.getX(),square.getY(),square.getZ())==square
+   &&(square==player.getSquare()||square.isAdjacentTo(player.getSquare())&&player.getSquare().canReachTo(square))&&zombie.iso.areas.SafeHouse.isSafehouseAllowLoot(square,player);
  }
  public static void clear(){closeBodies();ShelfBridge.clear();selected=null;contacts=List.of();retry.clear();solved.clear();packed.clear();released.clear();geometryRetry.clear();fittingQueries=packingQueries=0;fitted=null;occlusion=null;fittedOwner=null;fittedModel=null;fittedMesh=null;plannedRows=null;plannedFrame=null;located=List.of();visible=List.of();nextPlan=0;status="Storage item models Off";}
  public static void physicsConfigure(boolean enabled)throws Exception{if(enabled)RigidPhysics.loadDefault();if(physicsEnabled!=enabled){closeBodies();physicsEnabled=enabled;}}

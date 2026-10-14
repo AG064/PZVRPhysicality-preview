@@ -89,7 +89,7 @@ function M.near(player,square)
     return own and square and not player:isDead() and not player:getVehicle()
         and own:getZ()==square:getZ() and math.abs(player:getX()-square:getX()-.5)<=2
         and math.abs(player:getY()-square:getY()-.5)<=2
-        and square:isAdjacentTo(own) and not square:isBlockedTo(own)
+        and (square==own or square:isAdjacentTo(own) and own:canReachTo(square))
         and SafeHouse.isSafehouseAllowLoot(square,player)
 end
 function M.storage(container)

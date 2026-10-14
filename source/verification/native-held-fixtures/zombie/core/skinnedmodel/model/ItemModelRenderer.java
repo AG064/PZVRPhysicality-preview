@@ -1,0 +1,1 @@
+package zombie.core.skinnedmodel.model;public final class ItemModelRenderer {public enum RenderStatus {Ready,Loading,Failed,NoModel}public float x,y,z;public static boolean hasModel=true;public static boolean itemHasModel(zombie.inventory.InventoryItem item){return hasModel;}}

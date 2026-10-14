@@ -6,6 +6,8 @@ import viewpointvr.physics.CollisionShape;
 /** Numeric copies of the selected provider's triangles; no wall or pane bounding proxies. */
 public final class NativeWindowGeometry {
  public static final int MAX_FLOATS=96000,MAX_APERTURE_FLOATS=12288;
+ /** Native state is the authority for retaining intact aperture glass. */
+ public static boolean intactGlass(boolean open,boolean smashed,boolean removed,boolean destroyed){return !open&&!smashed&&!removed&&!destroyed;}
  public record Data(boolean north,float plane,float[] mesh,float[] aperture,float[] bounds){
   public Data{
    validate(mesh,MAX_FLOATS);validate(aperture,MAX_APERTURE_FLOATS);

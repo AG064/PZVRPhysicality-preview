@@ -1,0 +1,1 @@
+package zombie.characters;public final class IsoPlayer extends IsoGameCharacter {public static IsoPlayer[] players=new IsoPlayer[1];public static IsoPlayer instance;public static IsoPlayer getInstance(){return instance;}}

@@ -14,10 +14,10 @@ public final class TapRenderer implements AutoCloseable {
   if(viewport[2]!=width||viewport[3]!=height){glActiveTexture(active);throw new IllegalArgumentException("Tap viewport extent differs from native output");}
   glPushAttrib(GL_ALL_ATTRIB_BITS);
   try{
-   if(program==0)init();glUseProgram(program);glBindVertexArray(vao);glBindBuffer(GL_ARRAY_BUFFER,vbo);glEnable(GL_PROGRAM_POINT_SIZE);glEnable(GL_POINT_SPRITE);
-   glDisable(GL_DEPTH_TEST);glDepthMask(false);glDisable(GL_STENCIL_TEST);glDisable(GL_SCISSOR_TEST);glDisable(GL_CULL_FACE);glDisable(GL_ALPHA_TEST);glDisable(GL_FRAMEBUFFER_SRGB);glDisable(GL_COLOR_LOGIC_OP);glDisable(GL_RASTERIZER_DISCARD);glColorMask(true,true,true,true);
+   int shared=AuthoredDepth.texture(depth,width,height,draw,viewport);if(program==0)init();glUseProgram(program);glBindVertexArray(vao);glBindBuffer(GL_ARRAY_BUFFER,vbo);glEnable(GL_PROGRAM_POINT_SIZE);glEnable(GL_POINT_SPRITE);
+   glDisable(GL_DEPTH_TEST);glDepthMask(false);glDisable(GL_STENCIL_TEST);glDisable(GL_SCISSOR_TEST);glDisable(GL_CULL_FACE);glDisable(GL_ALPHA_TEST);glDisable(GL_FRAMEBUFFER_SRGB);glDisable(GL_COLOR_LOGIC_OP);glDisable(GL_RASTERIZER_DISCARD);glDisable(GL_POLYGON_OFFSET_FILL);glDisable(GL_POLYGON_OFFSET_LINE);glDisable(GL_POLYGON_OFFSET_POINT);glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);glColorMask(true,true,true,true);
    glEnable(GL_BLEND);glBlendEquationSeparate(GL_FUNC_ADD,GL_FUNC_ADD);glBlendFuncSeparate(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA,GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
-   glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,depth);glBindSampler(0,sampler);
+   glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,shared==0?depth:shared);glBindSampler(0,sampler);
    glUniform1i(glGetUniformLocation(program,"sceneDepth"),0);glUniform2f(glGetUniformLocation(program,"viewportOrigin"),viewport[0],viewport[1]);glUniform2f(glGetUniformLocation(program,"outputSize"),width,height);
    glUniformMatrix4fv(glGetUniformLocation(program,"viewProjection"),false,projection.get(new float[16]));glUniform1f(glGetUniformLocation(program,"pointScale"),Math.min(width,height)*.012f);
    var dots=new float[visuals.dots().size()*7];int index=0;for(var dot:visuals.dots()){var point=renderPoint(dot.point(),camera);index=vertex(dots,index,point.x(),point.y(),point.z(),1,1,1,dot.hovered()?1:.75f);}

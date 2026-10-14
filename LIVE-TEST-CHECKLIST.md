@@ -17,10 +17,24 @@ Record the preview version, game version, controller/runtime, GPU, refresh rate,
 - [ ] Verify-Demo reports ready and the intended preview version before launch.
 - [ ] Approve the Physicality Java mod through ZombieBuddy, restart if requested, and confirm no unavailable SDK or disabled-after-error messages.
 - [ ] Start VR and load the disposable save. Both eyes show the same world and UI without incorrect depth, flicker, double rendering or disappearing models.
+- [ ] The presentation guide opens once. Close and reopen it through Escape > Options > Mods > PZVR Presentation > Open controls and live status. Confirm mode, tracking/input guard, raw touch and geometry reasons update visibly while the guide is open.
+- [ ] Start with the HUD closed and confirm the guide is visible inside the headset through the native HUD. Return to game closes the HUD or reports menu dismissal. Window-only close preserves native HUD controls. Callback failures must not duplicate windows or repeatedly reopen HUD.
+- [ ] With no worn backpack, presentation startup adds at most one missing Schoolbag and completes one native wear action. Repeat the button and startup callback without duplicates. With a different backpack worn, its identity, contents and equipped state remain intact.
+- [ ] Use the guide's Sit on ground button with an idle living actor outside a vehicle. Native sitting and standing work. Dead, vehicle, timed-action and multiplayer guards reject the helper without changing inventory.
+- [ ] Compare ordinary profile defaults and Native controls against the presentation profile. Automatic guide/backpack and indexed-model repair are Off in ordinary profiles; applying a preset alone never grants or wears an item.
+- [ ] Enable Record actual held model placement in PZVR Presentation and compare the same item in Native controls and Presentation. Capture exact item/model/attachment and final placement receipts with a clip; changing presets retains this diagnostic selection without changing poses or inventory.
+- [ ] Read logical native hand slots with detailed recording Off. An invisible occupied mug still reports its actual slot/type and native model-reference state. Use native inventory to unequip it before an empty-hand pickup test.
+- [ ] Enable Keep recent grip attempt reasons, close the guide/HUD, attempt pickup, then reopen the guide. The stored attempt retains its earlier guard, contacts, rig, hand slots and pending request while current status can show UI ownership. Repeat without per-frame duplicates; actor/world changes and explicit Clear retire old history.
+- [ ] Prepare the next isolated profile from the closed current played presentation state. Its fresh save-file inventory and every saved byte must match the current source, including progress created after the original prelaunch snapshot.
 - [ ] Walk, jog, sprint, turn, crouch physically and by the current upstream binding, pause and recenter. Each action remains responsive with Physicality enabled.
 - [ ] Open the palm menu, HUD, inventory, context menu, map, hotbar and Viewpoint settings. Scroll, select, drag, close and return to gameplay without stuck input.
 - [ ] Repeat at the desired refresh rate. Record median frame time and visible spikes during a five-minute walk, a stocked room and repeated item transfers.
 - [ ] Inspect day/night, rain, snow, indoor lights, flashlight, fire, trees, fences, doors, windows, furniture, zombies, corpses, clothing and carried items. Check material, scale, alignment and stereo depth for each selected model provider.
+- [ ] Record actual native model-pack winners. Compare walls, doors and curtains for visual thickness/contact; missing authored geometry is a coverage gap rather than universal compatibility.
+- [ ] Test Mug of Coffee in both hands: pickup, held attachment, fluids, drop and reload. Compare original model/attachment receipts in Native controls before judging alignment.
+- [ ] Test CordlessPhone and every discovered moveable phone sprite: BeigeRotary location_business_office_generic_02_0; BlackRotary _02_4; RedRotary _02_8; WhiteRotary _02_12; WhiteModern _02_16; BlackModern _02_20; PayPhones walls_decoration_01_39. Record exact identity/provider; microphones and headphones are separate assets.
+- [ ] Test phone pickup/carry/full tilt, world contact, drop and ownership. Over-budget, cold or rejected output must retain native fallback, and retired geometry must be excluded before physics stepping.
+- [ ] Check near/far authored models in both eyes, then food/water/window glass. Verify shared depth, visible output, native foreground occlusion and no duplicate pass. Test NORTH/WEST windows through intermediate motion, opening, smash, close and Off with matching supported draw/contact.
 - [ ] Compare a normal single-player save against a fresh test save. Existing bindings, calibration, inventory and installed mod selection must remain intact.
 
 ## Hands and touch sensors
@@ -44,6 +58,8 @@ Record the preview version, game version, controller/runtime, GPU, refresh rate,
 - [ ] Change a door/window state while an object rests nearby. Collision updates without stale surfaces or launching the object.
 - [ ] Drop, pick up, save and reload the same native item repeatedly. Counts, identity, ownership and persisted orientation remain consistent.
 - [ ] Disable physical items while objects are resting, then enable again. Objects remain native objects and do not duplicate, vanish or move unexpectedly.
+- [ ] Compare native bathroom/furniture collision footprints against the optional triangle sweep. The native collision path remains active. Record avatar stop/slide separately from physical head/camera offset, which this mode leaves unclamped.
+- [ ] For pack-backed loose moveables, identify whether the emitted path is native yaw or the verified full-pose renderer. Tilted/rolling physics must match the actually visible pose. Off, failed, stale or missing full-pose rendering must omit unsupported quaternion simulation while retaining native ownership/drop.
 
 ## Food, utensils and water
 

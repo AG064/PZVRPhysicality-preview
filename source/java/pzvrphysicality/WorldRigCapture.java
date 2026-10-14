@@ -7,7 +7,9 @@ import local.pzvr.*;
 public final class WorldRigCapture {
  public static volatile WorldRigFrame latest;
  private static volatile boolean requested;
- private static boolean tapsRequested,storageRequested,utensilsRequested,bodyRequested,curtainsRequested,backpackRequested,heldContactsRequested;
+ private static volatile String captureState="not requested";private static final java.util.concurrent.atomic.AtomicLong publications=new java.util.concurrent.atomic.AtomicLong();
+ public static String status(){var frame=latest;long now=System.nanoTime();return "World rig "+captureState+"; requested="+requested+" publications="+publications.get()+" latest="+(frame==null?"none":frame.fresh(now)?"fresh":"stale")+" hands="+(frame==null?0:frame.hands().size());}
+ private static boolean tapsRequested,storageRequested,utensilsRequested,bodyRequested,curtainsRequested,backpackRequested,heldContactsRequested,playerCollisionRequested,worldVisualsRequested,moveablesRequested,windowMotionRequested;
  public static volatile BodyRig body;
  private static final java.util.Map<Object,WorldRigFrame> frames=new java.util.IdentityHashMap<>();
  public static synchronized void request(boolean value){tapsRequested=value;requests();}
@@ -17,7 +19,11 @@ public final class WorldRigCapture {
  public static synchronized void requestCurtains(boolean value){curtainsRequested=value;requests();}
  public static synchronized void requestBackpack(boolean value){backpackRequested=value;requests();}
  public static synchronized void requestHeldContacts(boolean value){heldContactsRequested=value;requests();}
- private static void requests(){requested=tapsRequested||storageRequested||utensilsRequested||bodyRequested||curtainsRequested||backpackRequested||heldContactsRequested;if(!requested){latest=null;body=null;frames.clear();}}
+ public static synchronized void requestPlayerCollision(boolean value){playerCollisionRequested=value;requests();}
+ public static synchronized void requestWorldVisuals(boolean value){worldVisualsRequested=value;requests();}
+ public static synchronized void requestMoveables(boolean value){moveablesRequested=value;requests();}
+ public static synchronized void requestWindowMotion(boolean value){windowMotionRequested=value;requests();}
+ private static void requests(){requested=tapsRequested||storageRequested||utensilsRequested||bodyRequested||curtainsRequested||backpackRequested||heldContactsRequested||playerCollisionRequested||worldVisualsRequested||moveablesRequested||windowMotionRequested;if(!requested){latest=null;body=null;frames.clear();captureState="not requested";}}
  public static synchronized WorldRigFrame forScene(Object scene,long now){var frame=frames.get(scene);return requested&&latest!=null&&frame!=null&&frame.fresh(now)?frame:null;}
  private static Object actor,origin;private static double yaw=Double.NaN;private static long generation;
  private static double units=Double.NaN,mouthDown=Double.NaN;
@@ -27,7 +33,7 @@ public final class WorldRigCapture {
   var offset=Engine.rigOffset(physical);var type=frame.getClass();if(frameType!=type){camX=type.getField("camX");camY=type.getField("camY");camZ=type.getField("camZ");scene=type.getField("scene");frameType=type;}return WorldRigFrame.fromRender(camX.getFloat(frame),camY.getFloat(frame),camZ.getFloat(frame),new MouthMath.Vec(offset.x(),offset.y(),offset.z()));
  }
  public static void capture(Object frame,Object player,XrBackend.Frame input){
-  if(!requested||!Main.ready()||!Engine.active()||!Engine.worldPresent||player==null||input==null||input!=Engine.latestInput||!input.focused()||input.head()==null){latest=null;return;}
+  if(!requested||!Main.ready()||!Engine.active()||!Engine.worldPresent||player==null||input==null||input!=Engine.latestInput||!input.focused()||input.head()==null){latest=null;captureState=!requested?"not requested":input!=Engine.latestInput?"sampled input replaced":"capture prerequisites unavailable";return;}
   try{
    Object centre=Engine.trackingOrigin();double facing=Engine.playspaceYaw,down=NativeConsumption.mouthDown();
    if(player!=actor||!java.util.Objects.equals(centre,origin)||!Double.isFinite(yaw)||Math.abs(yaw-facing)>.001){actor=player;origin=centre;yaw=facing;generation++;}
@@ -42,17 +48,17 @@ public final class WorldRigCapture {
     hands.add(new WorldRigFrame.Hand(side,grip,x,y,z,hand.down(XrBackend.TRIGGER)));
    }
    var camera=new ContactFrame.Point(camX.getFloat(frame),camY.getFloat(frame),camZ.getFloat(frame)*Math.sqrt(6));
-   if(!requested||input!=Engine.latestInput||!java.util.Objects.equals(centre,Engine.trackingOrigin())||Math.abs(facing-Engine.playspaceYaw)>.001||down!=NativeConsumption.mouthDown()||hands.isEmpty()){latest=null;return;}
+   if(!requested||input!=Engine.latestInput||!java.util.Objects.equals(centre,Engine.trackingOrigin())||Math.abs(facing-Engine.playspaceYaw)>.001||down!=NativeConsumption.mouthDown()||hands.isEmpty()){latest=null;captureState="capture changed or no tracked hands";return;}
    double scale=hands.getFirst().units();
    if(!Double.isFinite(units)||Math.abs(units-scale)>.0001||mouthDown!=down){units=scale;mouthDown=down;generation++;}
    var publication=new WorldRigFrame(System.nanoTime(),input.time(),player,scene.get(frame),camera,generation,mouth,hands);
    synchronized(WorldRigCapture.class){
-    if(!requested||input!=Engine.latestInput){latest=null;return;}
+    if(!requested||input!=Engine.latestInput){latest=null;captureState="sampled input replaced before publication";return;}
     if(frames.size()>=6&&!frames.containsKey(publication.scene())){var oldest=frames.entrySet().stream().min(java.util.Comparator.comparingLong(e->e.getValue().hostTime())).orElseThrow();frames.remove(oldest.getKey());}
-    frames.put(publication.scene(),publication);latest=publication;
+    frames.put(publication.scene(),publication);latest=publication;captureState="published";publications.incrementAndGet();
     if(bodyRequested){var centreHead=world(frame,head.position());var headRight=subtract(world(frame,head.position().add(head.rotation().rotate(new Math3.Vec(1,0,0)))),centreHead);var headForward=subtract(world(frame,head.position().add(head.rotation().rotate(new Math3.Vec(0,0,-1)))),centreHead);body=input==Engine.latestInput?BodyRig.from(publication,centreHead,headRight,headForward,scale):null;}
    }
-  }catch(ReflectiveOperationException|RuntimeException unsupported){latest=null;}
+  }catch(ReflectiveOperationException|RuntimeException unsupported){latest=null;captureState="capture rejected: "+unsupported.getClass().getSimpleName()+" "+String.valueOf(unsupported.getMessage());}
  }
  private WorldRigCapture(){}
 }

@@ -21,9 +21,18 @@ local function plan(index)
         {'PZVRPhysicalityCrafting','enabled',active},
         {'PZVRPhysicalityBackpack','enabled',active},
         {'PZVRPhysicalityContacts','enabled',active},
+        {'PZVRPresentation','showGuideOnStart',active},
+        {'PZVRPresentation','indexedModels',active},
+        {'PZVRPresentation','autoBackpack',index==1},
+        {'PZVRPhysicalityCollision','enabled',active},
+        {'PZVRPhysicalityCollision','roomScaleBody',index==1},
+        {'PZVRPresentation','moveableModels',index==1},
+        {'PZVRPresentation','nativeHeldFallback',index==1},
+        {'PZVRPresentation','physicalWindowMotion',index==1},
+        {'PZVRPhysicalityWorldVisuals','enabled',index==1},
     }
 end
-page:addButton('applyPreset','Apply selected preset','Presentation enables the implemented single-player physical features. Comfort uses a larger body reach and disables storage simulation. Native controls disables the optional interaction adapters. This button saves through native Mod Options.',function()
+page:addButton('applyPreset','Apply selected preset','Presentation enables supported single-player features and schedules the guide/test backpack for the next world start. Comfort increases body reach and retains native room-scale motion. Native controls disables optional adapters. Applying this preset never grants or equips items. Settings save through native Mod Options.',function()
     if not PZVRPhysicality or not PZVRPhysicality.ready() then print('[PZVR Presets] Preset unavailable: native SDK validation pending.');return end
     local index=choice:getValue();if index~=1 and index~=2 and index~=3 then return end
     local changes,pages,seen={},{},{}
@@ -42,7 +51,7 @@ page:addButton('applyPreset','Apply selected preset','Presentation enables the i
         for _,target in ipairs(pages) do target:apply() end
         local active=index~=3
         local curtains=active and PZVRPhysicality.curtainsAvailable()
-        if PZVRPhysicality.configurationFailures()~=failures or not PZVRPhysicality.presetValid(active,active,active,active,index==1,active,curtains,active) or not PZVRPhysicality.presetExtrasValid(active,active) then error('Native feature configuration did not match the selected preset') end
+        if PZVRPhysicality.configurationFailures()~=failures or not PZVRPhysicality.presetValid(active,active,active,active,index==1,active,curtains,active) or not PZVRPhysicality.presetExtrasValid(active,active) or not PZVRPhysicality.presetPresentationValid(active) or not PZVRPhysicality.presetPlayerCollisionValid(active,index==1) or not PZVRPhysicality.presetMoveableModelsValid(index==1) or not PZVRPhysicality.presetWorldVisualsValid(index==1) or not PZVRPhysicality.presetNativeHeldValid(index==1) or not PZVRPhysicality.presetWindowMotionValid(index==1) then error('Native feature configuration did not match the selected preset') end
     end)
     if not ok then
         for _,entry in ipairs(changes) do local restored,why=pcall(function() entry.option:setValue(entry.before) end);if not restored then print('[PZVR Presets] Restore failed: '..tostring(why)) end end

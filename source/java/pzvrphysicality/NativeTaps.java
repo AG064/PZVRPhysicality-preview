@@ -6,21 +6,17 @@ import java.util.*;import local.pzvr.*;import zombie.characters.IsoPlayer;import
 public final class NativeTaps {
  public record Request(long ticket,int side,IsoPlayer actor,IsoObject source,InventoryItem cup,long epoch,long created){}
  private static final NearbyTaps nearby=new NearbyTaps();private static final TapGesture<IsoObject> valves=new TapGesture<>();
- private static List<NearbyTaps.Target> targets=List.of();private static volatile boolean enabled;
+ private static final Object depthDemand=new Object();private static List<NearbyTaps.Target> targets=List.of();private static volatile boolean enabled;
  private static IsoPlayer actor;private static long epoch,rigGeneration=-1,nextDiscovery,sequence,activeSince,retryAt;private static Request pending,active;
  private static String status="Physical taps Off";
  private static final boolean[] neutral=new boolean[2];
  public static volatile TapVisuals visuals=TapVisuals.EMPTY;
- public static void configure(boolean value){enabled=value;reset();WorldRigCapture.request(value);status=value?"Physical taps armed; release triggers before touching a handle":"Physical taps Off";}
+ public static void configure(boolean value){enabled=value;reset();WorldRigCapture.request(value);AuthoredDepth.request(depthDemand,value);WorldVisuals.refreshRequests();status=value?"Physical taps armed; release triggers before touching a handle":"Physical taps Off";}
  private static void reset(){targets=List.of();valves.reset();Arrays.fill(neutral,false);nearby.clear();actor=null;pending=active=null;visuals=TapVisuals.EMPTY;epoch++;rigGeneration=-1;nextDiscovery=retryAt=0;}
  private static IsoPlayer player(){return IsoPlayer.players.length==0?null:IsoPlayer.players[0];}
  private static boolean eligible(IsoPlayer p,WorldRigFrame rig,long now){return enabled&&p!=null&&rig!=null&&rig.actor()==p&&rig.fresh(now)&&!p.isDead()&&p.getSquare()!=null&&p.getVehicle()==null&&!zombie.network.GameClient.client&&!zombie.network.GameServer.server&&!zombie.GameTime.isGamePaused()&&!VrApi.fullHud()&&!VrApi.pointerActive()&&!zombie.ui.UIManager.isModalVisible()&&!zombie.core.Core.getInstance().isDoingTextEntry();}
  private static boolean current(NearbyTaps.Target target,IsoPlayer p){
-  var source=target.source();var square=source.getSquare();if(square==null||source.getObjectIndex()<0||p.getSquare()==null||!square.isAdjacentTo(p.getSquare())||square.isBlockedTo(p.getSquare())||source.getSprite()==null)return false;
-  var bind=viewpoint.packs.ModelPacks.bind(source.getSprite());if(bind==null||bind.model!=target.model()||!target.profile().matches(bind.model.bounds()))return false;
-  var base=new ContactFrame.Point(square.getX()+.5+bind.x,square.getY()+.5+bind.y,square.getZ()*Math.sqrt(6)+viewpoint.world.WorldMesher.rise(source)+bind.z);
-  boolean turn=viewpoint.packs.PackBind.turns(source.getSprite());float c=turn?bind.cos:1,s=turn?bind.sin:0;
-  return base.distance(target.base())<.0001&&Math.abs(c-target.cos())<.0001&&Math.abs(s-target.sin())<.0001&&Math.abs(bind.scale-target.scale())<.0001;
+  return NearbyTaps.current(target,p)&&(!target.profile().authored()||WorldVisuals.visible(target));
  }
  private static NearbyTaps.Target nearestHandle(IsoPlayer p,WorldRigFrame.Hand hand){
   if(NativeItems.hand(p,hand.side())!=null)return null;NearbyTaps.Target closest=null;double distance=.12*hand.units();
@@ -55,13 +51,14 @@ public final class NativeTaps {
   }
   var dots=new ArrayList<TapVisuals.Dot>();var streams=new ArrayList<TapVisuals.Stream>();double units=rig.hands().getFirst().units();
   for(var target:targets){if(!current(target,p))continue;for(var point:target.handles())dots.add(new TapVisuals.Dot(point,rig.hands().stream().anyMatch(h->NativeItems.hand(p,h.side())==null&&h.grip().distance(point)<.12*h.units())));
-   if(valves.open(target.source())&&target.source().hasFluid()){double bottom=target.base().height()+target.profile().bounds()[1]*target.scale()+.04*units;streams.add(new TapVisuals.Stream(target.spout(),new ContactFrame.Point(target.spout().x(),target.spout().y(),Math.min(target.spout().height()-.08*units,bottom)),units));}
+   if(valves.open(target.source())&&target.source().hasFluid()){double bottom=target.base().height()+target.profile().basinHeight()*target.scale()+.04*units;streams.add(new TapVisuals.Stream(target.spout(),new ContactFrame.Point(target.spout().x(),target.spout().y(),Math.min(target.spout().height()-.08*units,bottom)),units));}
   }
   visuals=new TapVisuals(now,rig.generation(),dots,streams);
  }
  public static Request request(){return pending;}
  public static boolean busy(){return pending!=null||active!=null;}
  public static boolean enabled(){return enabled;}
+ public static boolean open(IsoObject source){return enabled&&valves.open(source);}
  public static boolean acknowledge(long ticket,boolean queued){long now=System.nanoTime();if(pending==null||pending.ticket()!=ticket||now-pending.created()>500_000_000L)return false;if(queued){active=pending;activeSince=now;}else retryAt=now+300_000_000L;pending=null;return true;}
  public static boolean valid(long ticket,long generation){
   var p=player();var rig=WorldRigCapture.latest;long now=System.nanoTime();if(active==null||active.ticket()!=ticket||active.epoch()!=generation||generation!=epoch||p!=active.actor()||!eligible(p,rig,now)||rig.generation()!=rigGeneration)return false;

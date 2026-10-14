@@ -1,0 +1,1 @@
+package zombie.core.skinnedmodel.model.jassimp;public final class ProcessedAiScene {private final java.util.ArrayList<ImportedStaticMesh> staticMeshes=new java.util.ArrayList<>();public void add(ImportedStaticMesh v){staticMeshes.add(v);}public ImportedStaticMesh first(){return staticMeshes.get(0);}}

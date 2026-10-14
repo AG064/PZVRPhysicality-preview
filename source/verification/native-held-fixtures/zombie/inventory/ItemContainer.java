@@ -1,0 +1,1 @@
+package zombie.inventory;public final class ItemContainer {public final java.util.HashSet<InventoryItem> items=new java.util.HashSet<>();public boolean contains(InventoryItem item){return items.contains(item);}}

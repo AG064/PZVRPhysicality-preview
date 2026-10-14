@@ -1,0 +1,1 @@
+package zombie.core.skinnedmodel.model;public final class ModelSlotRenderData {public zombie.characters.IsoGameCharacter character;public final ModelInstanceRenderDataList modelData=new ModelInstanceRenderDataList();}

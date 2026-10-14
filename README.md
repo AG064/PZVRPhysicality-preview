@@ -14,9 +14,15 @@ This is the standalone Physicality extension. Enable it alongside the original d
 4. Start VR through the upstream PZVR controls. In Mod Options, choose PZVR Gameplay Presets, select Presentation and press Apply. Normal profiles start with the optional modes Off.
 5. Use a disposable single-player save for the first test. Run the [live acceptance checklist](LIVE-TEST-CHECKLIST.md), then compare your ordinary gameplay against the Native controls preset.
 
-Presentation enables the supported physical features. Comfort increases body reach and disables storage simulation. Native controls disables optional Physicality interaction adapters. Individual settings remain editable in Mod Options, including mouth contact/confirmation, body reach and XYZ anchors, controller calibration, storage modes, backpack access and contact feedback. Presets preserve calibration and bindings and check the actual native mode state before saving.
+Presentation enables the supported physical features. Comfort increases body reach, disables storage simulation and keeps room-scale body movement native. Native controls disables optional Physicality interaction adapters. Individual settings remain editable in Mod Options, including mouth contact/confirmation, body reach and XYZ anchors, controller calibration, storage modes, backpack access, contact feedback and player collision. Presets preserve calibration and bindings and check the actual native mode state before saving.
 
-The PZVR Presentation options provide explicit demo supplies and feature-status output. Supplies use the native item factory only when the button is pressed; existing items are retained. Wear bags and belts through the normal game actions.
+Open controls and live status on the PZVR Presentation page shows the native game guide with current mode, tracking/input guards, touch availability and geometry status. The separate presentation profile opens it once at world start. Ordinary profiles leave automatic guide, backpack preparation and indexed-model repair Off. The guide can always be reopened from Mod Options.
+
+PZVR Presentation also offers native Sit on ground, Give and wear one test schoolbag, and idempotent demo supplies. Schoolbag setup adds one missing original bag and queues the native wear action only for an empty back slot; ownership and the worn slot are checked again at completion. A different worn backpack stays equipped. The separate presentation profile enables one startup attempt, while applying a preset never grants or equips items. Supplies retain existing native items and contents. Belts use the normal inventory wear action. These helpers require an idle living single-player actor outside a vehicle.
+
+Record actual held model placement on the same page enables bounded native item/model/attachment and final rendered-placement receipts. This independent diagnostic retains its selected value when switching Gameplay presets, so Native controls and physical modes can be compared. It changes neither hand poses nor inventory. The guide shows capture availability and rejection reasons.
+
+Logical native hand slots are shown even with detailed model recording Off. An invisible held item still occupies its original slot. Keep recent grip attempt reasons retains eight raw press snapshots with the guard, contact/rig publication, hand slots and pending request state. Opening the guide or HUD preserves those snapshots, so a failed pickup can be inspected afterward. UI-owned presses have separate labels; actor/cell changes, world exit and explicit Clear reset the history. A recorded request identifies an attempted operation and does not prove its completion.
 
 ## Interaction coverage
 
@@ -25,14 +31,17 @@ The PZVR Presentation options provide explicit demo supplies and feature-status 
 | Loose items | Grip pickup and release/drop through native actions, with captured rigid meshes, compound convex collision, gravity, release motion and persisted rotation. |
 | Food and drink | Calibrated mouth approach and confirmation use original eating/drinking actions, nutrition, fluid rules, masks, sealed containers and leftovers. |
 | Utensils | Plain Spoon/Fork contact takes a visible portion from calibrated bread, fruit, carrot root or cheese regions. Spoons scoop exposed upright soup/stew surfaces. |
-| Storage | Actual rendered contents use native transfer actions, deterministic non-overlap layouts, manual/saved placement and optional storage simulation. |
+| Storage | Select a reachable container once through the native loot inventory, close the HUD, then grip its actual rendered contents. Native transfer actions, deterministic non-overlap layouts, manual/saved placement and optional storage simulation retain native ownership. Missing geometry uses native inventory. |
 | Body gear | Draw/return the real worn backpack and draw/store eligible native hotbar items using adjustable body regions and original equip/wear/attachment rules. |
 | Backpack contents | Supported held bags, including the native skinned Schoolbag, show up to eight real item models per page. Grab/return uses original transfers and capacity checks. Deliberate suspension keeps the same bag in native inventory at its captured visual position; gripping its original mesh recalls it through native equip. |
 | Held prop contacts | Supported single rigid props receive contact feedback and configurable shallow correction of the visible wrist/fingers/socket and prop together. Native rotations, tracking, weapon grasps and active action poses remain authoritative. |
 | World contacts | Original generated wall, corner/roof/gable and unambiguous barricade triangles, actual animated door leaves, packed furniture and supported Better Window frames/panes feed the same physical environment. Native state and mesh lineage retire stale geometry. |
-| Curtains | Reach a supported cloth edge, grip and pull laterally to dispatch exactly one original curtain action. |
+| Player collision | The optional adapter clips avatar movement against actual supported captured surfaces before the original native collision path. Presentation includes room-scale body movement; Comfort leaves that part native. Headset pose and residual head lean retain upstream tracking. Missing/stale geometry uses native movement. |
+| World visual feedback | A separate mode provides supported emitted counter-sink/faucet geometry and feedback with exact model lineage and a recent rendered receipt. Supported bathroom sink/counter movement receives scoped native footprint refinement only after current exact geometry is admitted; unsupported objects keep the original footprint. |
+| Ground moveable models | Exact selected pack bindings use the admitted full-pose renderer and contact path for supported ground and held moveables. Per-item current draw admission is required before native icons or proxy simulation are replaced; cold, omitted or unsupported items retain native rendering and ownership. |
+| Window sash and curtains | Measured supported sash pieces use the same progressed visual and contact state. Omitted, budget-limited or invalid draws restore native static geometry. Curtains retain one original open/close action from a deliberate cloth-edge pull. |
 | Crafting | Use the free-hand gesture near a supported held tool to open the original recipes-for-tool screen. Native requirements, duration, ingredients and outputs remain authoritative. |
-| Hands | Separate trigger/stick/rest/face contacts and trigger/squeeze pressure where the controller exposes them. Validated five-root rigs use separate index and grip estimates; the stock grouped rig retains its corresponding grouped behavior. Native held grasps take priority. |
+| Hands | Separate trigger/stick/rest/face contacts and trigger/squeeze pressure where the controller exposes them. Validated five-root rigs use separate index and grip estimates; the stock grouped rig retains its corresponding grouped behavior. Native held grasps take priority. The separate held fallback captures exact native CordlessPhone/FBX geometry and final placement; unavailable native contracts stay native. |
 | Taps | Calibrated white/beige inset-sink handle motion, visible flow, native filling/drinking and native fluid capacity/contamination. |
 | Ordinary gameplay | Native menus/actions remain available for combat, building, medical care, farming, fishing, vehicles, clothing, sleep and other gameplay. Physical interaction adapters defer to modal UI, timed actions and native weapon support. |
 
@@ -48,11 +57,11 @@ The release carries an allowlisted package, exact SDK/library pins, offline regr
 
 Physicality's physical actions target single-player. Their multiplayer guards remain enabled. Upstream PZVR multiplayer behavior is separate from this extension's physical transaction coverage.
 
-Publication copy note: This main-branch README was updated after the v0.1.16-preview freeze. The README hash in PUBLIC-READBACK.json refers to the original release copy; release assets and the frozen tag remain unchanged.
+Publication copy note: This README preserves the existing preview warning. Release ZIP and source ZIP retain their frozen contents. PUBLIC-READBACK.json records this published README hash and its original export hash.
 
 ## Source and attribution
 
-The authored Java/Lua source is under source. BuildPreview.ps1 recompiles against your own matching SDKs into a fresh temporary directory without launching or installing the game. Personal modified builds need their own approval and verification.
+The authored Java/Lua source is under source. BuildPreview.ps1 recompiles against your own matching SDKs into a fresh temporary directory without launching or installing the game. TestPreview.ps1 runs the small pure policy subset. TestNativeHeld.ps1 includes the authored native-held fixture/typed-ABI gate using your matching SDKs and compiled production classes. These checks do not reproduce the private asset or whole release GPU gate. Personal modified builds need their own approval and verification.
 
 Physicality source is MIT licensed. Rust dependency notices are included in the JAR and source distribution. Original game/Workshop SDKs, meshes, textures, decompiled implementations and upstream repository history are excluded. Credits: PZVR by axizt and GingasVR; Project Viewpoint by its authors; ZombieBuddy by zed-0xff; and the separately installed model/geometry providers linked in DEPENDENCIES.md.
 

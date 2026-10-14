@@ -15,6 +15,8 @@ public final class FingerPoseDriver {
  private record Mode(boolean enabled,long epoch){}
  private static volatile Mode mode=new Mode(false,0);
  private static volatile String detail="Finger poses Off";
+ private static volatile String leftResult="not captured",rightResult="not captured";
+ private static void result(int side,String value){if(side==0)leftResult=value;else rightResult=value;}
  private static final ThreadLocal<ArrayDeque<Scope>> scopes=new ThreadLocal<>();
  private static final ThreadLocal<History[]> histories=new ThreadLocal<>();
  private static final Scope INACTIVE=new Scope();
@@ -33,7 +35,7 @@ public final class FingerPoseDriver {
   configureForTest(requested);
  }
  static synchronized void configureForTest(boolean requested){var before=mode;if(before.enabled()!=requested)mode=new Mode(requested,before.epoch()+1);detail=requested?"Finger poses waiting for fresh supported free hands":"Finger poses Off";}
- public static String status(){return mode.enabled()?"Finger poses On: separate index/grip estimates on validated five-finger rigs, native grouped-rig fallback; native grasps take priority":detail;}
+ public static String status(){return mode.enabled()?"Finger poses On; L["+leftResult+"] R["+rightResult+"]; grouped rigs use thumb/group estimates; native grasps take priority":detail;}
  public static boolean enabled(){return mode.enabled();}
  public static void begin(IsoGameCharacter actor){var config=mode;var stack=scopes.get();if(!config.enabled()&&stack==null){histories.remove();return;}if(stack==null){stack=new ArrayDeque<>();scopes.set(stack);}stack.push(config.enabled()?new Scope(actor,Engine.latestInput,config.epoch()):INACTIVE);}
  public static void end(){var stack=scopes.get();if(stack==null)return;if(!stack.isEmpty())stack.pop();if(stack.isEmpty())scopes.remove();}
@@ -48,14 +50,14 @@ public final class FingerPoseDriver {
   return true;
  }
  public static void pose(SkinningData skin,Matrix4f[] source,Matrix4f[] output,int side,float nativeAmount,Matrix4f[] reference){
-  var s=current();if(side<0||side>1)return;if(!free(s,side)){reset(side);return;}
+  var s=current();if(side<0||side>1)return;if(!free(s,side)){reset(side);result(side,"native grasp, capture or tracking owns pose");return;}
   try{
-   if(s.skin!=null&&(s.skin!=skin||s.source!=source||s.output!=output)){s.valid=false;return;}
-   if(source==null||output==null||reference==null||source==output||source==reference||output==reference||skin==null||skin.boneIndices==null||skin.skeletonHierarchy==null||source.length!=output.length||source.length!=reference.length||source.length!=skin.skeletonHierarchy.size()||source.length>512)return;
+   if(s.skin!=null&&(s.skin!=skin||s.source!=source||s.output!=output)){s.valid=false;result(side,"posture/finger frame identity differs");return;}
+   if(source==null||output==null||reference==null||source==output||source==reference||output==reference||skin==null||skin.boneIndices==null||skin.skeletonHierarchy==null||source.length!=output.length||source.length!=reference.length||source.length!=skin.skeletonHierarchy.size()||source.length>512){result(side,"native source/reference/layout unavailable");return;}
    var reading=ControllerTouch.reading(s.input,side,System.nanoTime());
    String prefix=side==0?"Bip01_L_":"Bip01_R_";Integer hand=skin.boneIndices.get(prefix+"Hand");
-   int[] roots=roots(skin,prefix,hand,source.length);if(roots==null)return;
-   if(!usable(source[hand])||!usable(output[hand])||!usable(reference[hand]))return;
+   int[] roots=roots(skin,prefix,hand,source.length);if(roots==null){result(side,"unsupported native finger hierarchy");return;}
+   if(!usable(source[hand])||!usable(output[hand])||!usable(reference[hand])){result(side,"native wrist matrices invalid");return;}
    int layout=31*(31*source.length+hand)+Arrays.hashCode(roots);layout=31*layout+skin.skeletonHierarchy.hashCode();
    var policy=filtered(s,skin,reading,side,layout);var curls=roots.length==5?new FingerPose.Curl[]{policy.thumb(),policy.index(),policy.grip(),policy.grip(),policy.grip()}:new FingerPose.Curl[]{policy.thumb(),FingerPose.grouped(policy)};
    var updates=new HashMap<Integer,Matrix4f>();
@@ -70,8 +72,8 @@ public final class FingerPoseDriver {
      var changed=new Matrix4f(output[hand]).mul(new Matrix4f().translationRotateScale(translation,rotation,scale));if(!changed.isFinite())return;updates.put(n,changed);
     }
    }
-   synchronized(FingerPoseDriver.class){if(!free(s,side)||s.input!=Engine.latestInput)return;for(var entry:updates.entrySet())output[entry.getKey()]=entry.getValue();}
-  }catch(RuntimeException|LinkageError unsupported){detail="Finger pose unavailable; native pose retained";}
+   synchronized(FingerPoseDriver.class){if(!free(s,side)||s.input!=Engine.latestInput)return;for(var entry:updates.entrySet())output[entry.getKey()]=entry.getValue();result(side,updates.isEmpty()?"raw touch/pressure unavailable; native pose retained":(roots.length==5?"five":"grouped")+" applied "+updates.size()+" native finger matrices");}
+  }catch(RuntimeException|LinkageError unsupported){detail="Finger pose unavailable; native pose retained";result(side,"pose failed: "+unsupported.getClass().getSimpleName());}
  }
  /** Admit a complete disjoint rig, never a partial or overlapping finger map. */
  private static int[] roots(SkinningData skin,String prefix,Integer hand,int length){

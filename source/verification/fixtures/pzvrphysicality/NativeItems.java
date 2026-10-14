@@ -1,0 +1,2 @@
+package pzvrphysicality;
+ public final class NativeItems {public static boolean enabled;public static long generation=1;public static float[] visual;public static long epoch(){return generation;}public static boolean enabled(){return enabled;}public static boolean ownsGrip(int side){return enabled&&side>=0&&side<=1;}public static float[] visualPose(zombie.inventory.InventoryItem item,zombie.iso.objects.IsoWorldInventoryObject source){return visual;}}

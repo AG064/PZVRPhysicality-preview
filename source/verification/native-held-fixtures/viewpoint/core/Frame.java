@@ -1,0 +1,1 @@
+package viewpoint.core;public final class Frame {public final viewpoint.render.SceneData scene=new viewpoint.render.SceneData();public float camX,camY,camZ;public final java.util.ArrayList<zombie.core.textures.TextureDraw.GenericDrawer> drawers=new java.util.ArrayList<>();}

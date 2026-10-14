@@ -1,0 +1,1 @@
+package zombie.scripting;public final class ScriptManager {public static ScriptManager instance=new ScriptManager();public zombie.scripting.objects.ModelScript script=new zombie.scripting.objects.ModelScript();public zombie.scripting.objects.ModelScript getModelScript(String name){return script;}}

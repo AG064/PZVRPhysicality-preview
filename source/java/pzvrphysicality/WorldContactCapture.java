@@ -24,13 +24,14 @@ public final class WorldContactCapture {
  private static final WeakHashMap<Object,Copied> copies=new WeakHashMap<>();
  private static final WeakHashMap<Object,Long> failed=new WeakHashMap<>();
  private static final WeakHashMap<IsoChunk,Map<Integer,Receipt>> latest=new WeakHashMap<>();
- private static boolean items,storage,held;private static Object actor,cell;private static Thread thread;private static long epoch;
+ private static boolean items,storage,held,playerCollision;private static Object actor,cell;private static Thread thread;private static long epoch;
  private static volatile long captured,missing,rejected;private static volatile boolean unavailable;private static boolean barricades;
  private static Field entries,levels,dirty,evicted,version,current,verts,plantBase,retired,recipeLevel,recipeBatches,batchOps,opKind,opOwner,opMesh,tileData;
  public static synchronized void requestItems(boolean value){items=value;}
  public static synchronized void requestStorage(boolean value){storage=value;}
  public static synchronized void requestHeldContacts(boolean value){held=value;}
- public static synchronized boolean enabled(){return items||storage||held;}
+ public static synchronized void requestPlayerCollision(boolean value){playerCollision=value;}
+ public static synchronized boolean enabled(){return items||storage||held||playerCollision;}
 
  static record Receipt(WeakReference<IsoChunk> chunk,int wx,int wy,int level,WeakReference<Object> actor,WeakReference<Object> cell,long epoch,long version,WeakReference<Object> previous,List<SquareState> squares,boolean unownedStatic){}
  static record Copied(Receipt receipt,Map<Integer,CollisionShape> shapes,CollisionShape unowned,int bytes,int omitted){}

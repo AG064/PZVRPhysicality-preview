@@ -1,0 +1,10 @@
+package pzvrphysicality;
+import java.util.*;
+/** Numeric copy of the actual provider wall triangle mapping, including native UV corner insets. */
+public final class WindowMotionProjection {
+ private final float[][] triangles;
+ public WindowMotionProjection(float[][] source){if(source==null||source.length!=2)throw new IllegalArgumentException("Window measured wall projection");triangles=new float[source.length][];for(int n=0;n<source.length;n++){if(source[n]==null||source[n].length!=12)throw new IllegalArgumentException("Window wall triangle mapping");triangles[n]=source[n].clone();for(float value:triangles[n])if(!Float.isFinite(value)||Math.abs(value)>512)throw new IllegalArgumentException("Window wall projection bounds");}}
+ public boolean matches(WindowMotionProjection other){return other!=null&&Arrays.deepEquals(triangles,other.triangles);}
+ public float[] uv(float along,float height){if(!Float.isFinite(along)||!Float.isFinite(height)||Math.abs(along)>4||Math.abs(height)>4)throw new IllegalArgumentException("Window projection sample");float best=-Float.MAX_VALUE,u=0,v=0;for(var t:triangles){float area=(t[5]-t[9])*(t[0]-t[8])+(t[8]-t[4])*(t[1]-t[9]);if(Math.abs(area)<1e-8)continue;float a=((t[5]-t[9])*(along-t[8])+(t[8]-t[4])*(height-t[9]))/area,b=((t[9]-t[1])*(along-t[8])+(t[0]-t[8])*(height-t[9]))/area,c=1-a-b,min=Math.min(a,Math.min(b,c));if(min>best){best=min;u=a*t[2]+b*t[6]+c*t[10];v=a*t[3]+b*t[7]+c*t[11];}if(min>=-1e-5)break;}if(!Float.isFinite(u)||!Float.isFinite(v)||best==-Float.MAX_VALUE)throw new IllegalArgumentException("Window degenerate projection");return new float[]{u,v};}
+ public float[] render(float[] source,boolean north,float lift){if(source==null||source.length%24!=0||source.length>NativeWindowGeometry.MAX_FLOATS||!Float.isFinite(lift)||Math.abs(lift)>1)throw new IllegalArgumentException("Window projected mesh");var out=new float[source.length/8*10];for(int at=0,target=0;at<source.length;at+=8,target+=10){System.arraycopy(source,at,out,target,8);out[target+1]+=lift;var uv=uv(out[target+(north?0:2)],out[target+1]);out[target+8]=uv[0];out[target+9]=uv[1];}return out;}
+}

@@ -1,0 +1,1 @@
+package zombie.core.skinnedmodel.model;public final class VertexBufferObject {public boolean isStatic=true;public static final class VertexArray {public int numVertices;public float[] positions;public VertexArray(float[] p){positions=p;numVertices=p.length/3;}public float getElementFloat(int vertex,int element,int component){return positions[vertex*3+component];}}}

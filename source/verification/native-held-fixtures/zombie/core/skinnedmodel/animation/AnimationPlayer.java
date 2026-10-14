@@ -1,0 +1,1 @@
+package zombie.core.skinnedmodel.animation;public final class AnimationPlayer {public zombie.core.skinnedmodel.model.SkinningData skin;public zombie.core.skinnedmodel.model.SkinningData getSkinningData(){return skin;}}

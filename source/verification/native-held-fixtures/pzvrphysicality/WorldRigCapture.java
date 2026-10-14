@@ -1,0 +1,1 @@
+package pzvrphysicality;public final class WorldRigCapture {public static WorldRigFrame latest;public static WorldRigFrame forScene(Object scene,long now){return latest!=null&&latest.scene()==scene&&latest.fresh(now)?latest:null;}}
