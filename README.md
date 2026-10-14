@@ -1,7 +1,5 @@
 # PZVR Physicality preview
 
-> **Preview warning:** Multiplayer support is planned. This preview may currently be unstable or unplayable.
-
 Single-player physical item, food, utensil, storage and body interactions for released PZVR and Project Viewpoint. The extension preserves native item identities, inventory ownership, quantities, recipes and original action completion. PZVR continues to own OpenXR, movement, menus, native hand grasps and melee; Viewpoint continues to own rendering.
 
 This is the standalone Physicality extension. Enable it alongside the original dependencies listed in [DEPENDENCIES.md](DEPENDENCIES.md). The earlier experimental ProjectViewpointVR runtime is a separate project and must not be enabled alongside this preview.
@@ -17,6 +15,8 @@ This is the standalone Physicality extension. Enable it alongside the original d
 Presentation enables the supported physical features. Comfort increases body reach, disables storage simulation and keeps room-scale body movement native. Native controls disables optional Physicality interaction adapters. Individual settings remain editable in Mod Options, including mouth contact/confirmation, body reach and XYZ anchors, controller calibration, storage modes, backpack access, contact feedback and player collision. Presets preserve calibration and bindings and check the actual native mode state before saving.
 
 Open controls and live status on the PZVR Presentation page shows the native game guide with current mode, tracking/input guards, touch availability and geometry status. The separate presentation profile opens it once at world start. Ordinary profiles leave automatic guide, backpack preparation and indexed-model repair Off. The guide can always be reopened from Mod Options.
+
+The 0.1.18 candidate targets the exact PZVR 0.1.2 payload. Native grabs, consumed grips and physical bandaging retain per-hand action authority; a fresh neutral grip/trigger frame is required before an authored action can resume. Current native binding mirroring controls logical grip and trigger routes independently of aim preference. Actor, world, focus, pause, UI, timed-action and weapon guards remain active.
 
 PZVR Presentation also offers native Sit on ground, Give and wear one test schoolbag, and idempotent demo supplies. Schoolbag setup adds one missing original bag and queues the native wear action only for an empty back slot; ownership and the worn slot are checked again at completion. A different worn backpack stays equipped. The separate presentation profile enables one startup attempt, while applying a preset never grants or equips items. Supplies retain existing native items and contents. Belts use the normal inventory wear action. These helpers require an idle living single-player actor outside a vehicle.
 
@@ -57,12 +57,10 @@ The release carries an allowlisted package, exact SDK/library pins, offline regr
 
 Physicality's physical actions target single-player. Their multiplayer guards remain enabled. Upstream PZVR multiplayer behavior is separate from this extension's physical transaction coverage.
 
-Publication copy note: This README preserves the existing preview warning. Release ZIP and source ZIP retain their frozen contents. PUBLIC-READBACK.json records this published README hash and its original export hash.
-
 ## Source and attribution
 
-The authored Java/Lua source is under source. BuildPreview.ps1 recompiles against your own matching SDKs into a fresh temporary directory without launching or installing the game. TestPreview.ps1 runs the small pure policy subset. TestNativeHeld.ps1 includes the authored native-held fixture/typed-ABI gate using your matching SDKs and compiled production classes. These checks do not reproduce the private asset or whole release GPU gate. Personal modified builds need their own approval and verification.
+The authored Java/Lua source is under source. BuildPreview.ps1 recompiles against your own matching SDKs into a fresh temporary directory without launching or installing the game. TestPreview.ps1 runs the small pure policy subset. TestNativeHeld.ps1 includes the authored native-held fixture/typed-ABI gate using your matching SDKs and compiled production classes. TestInputOwnership.ps1 checks original input ordering through copied bytecode and executes the ownership, touch and finger policies against authored providers. These checks do not reproduce the private asset or whole release GPU gate. Personal modified builds need their own approval and verification.
 
 Physicality source is MIT licensed. Rust dependency notices are included in the JAR and source distribution. Original game/Workshop SDKs, meshes, textures, decompiled implementations and upstream repository history are excluded. Credits: PZVR by axizt and GingasVR; Project Viewpoint by its authors; ZombieBuddy by zed-0xff; and the separately installed model/geometry providers linked in DEPENDENCIES.md.
 
-For a bug report, include the preview version, dependency versions, controller/runtime, dominant hand, preset, a minimal reproduction, the relevant console excerpt and a short clip. Exclude credentials, saves and unrelated personal data.
+For a bug report, include the preview version, dependency versions, controller/runtime, aim hand, native binding mirroring, preset, a minimal reproduction, the relevant console excerpt and a short clip. Exclude credentials, saves and unrelated personal data.

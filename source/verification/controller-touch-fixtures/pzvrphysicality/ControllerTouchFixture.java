@@ -16,6 +16,6 @@ public final class ControllerTouchFixture implements ControllerTouch.Transport {
  public void supported(int side){for(var channel:ControllerTouch.Channel.values())if(channel.analog)value(channel,side,0);else contact(channel,side,false);}
  public static ControllerTouch.Context context(Object backend,Object session,Object set,Object lock,boolean eligible){return new ControllerTouch.Context(backend,new Object(),session,set,lock,new long[]{11,12},Map.of("native_trigger",new Object(),"native_grip",new Object()),eligible);}
  public static ControllerProfiles.Profile profile(){return new ControllerProfiles.Profile(ControllerTouch.PROFILE,"Touch","",List.of(new ControllerProfiles.Binding("native_trigger","/user/hand/right/input/trigger/value"),new ControllerProfiles.Binding("native_grip","/user/hand/left/input/squeeze/value")));}
- public static XrBackend.Hand hand(boolean tracked){return new XrBackend.Hand(null,null,tracked,0,0,0);}
+ public static XrBackend.Hand hand(boolean tracked){var pose=tracked?new local.pzvr.Math3.Pose(new local.pzvr.Math3.Vec(0,0,0),new local.pzvr.Math3.Quat(0,0,0,1)):null;return new XrBackend.Hand(pose,pose,tracked,0,0,0);}
  public static XrBackend.Frame frame(long time,XrBackend.Hand left,XrBackend.Hand right){return new XrBackend.Frame(time,true,true,null,List.of(),left,right);}
 }

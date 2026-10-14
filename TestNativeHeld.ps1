@@ -4,7 +4,7 @@ if(Test-Path -LiteralPath $policy){. $policy;$valid=Test-PhysicalityTemporaryPat
 if(!$valid-or(Test-Path -LiteralPath $run)){throw 'Fresh ephemeral native-held verification required'}
 $sourceRoot=Join-Path $PSScriptRoot 'src';$verificationRoot=$PSScriptRoot
 if(!(Test-Path -LiteralPath $sourceRoot)){$sourceRoot=Join-Path $PSScriptRoot 'source/java';$verificationRoot=Join-Path $PSScriptRoot 'source/verification'}
-$pins=@{GameJar='e1a69eb743ede60b213a0fe7f8b83d4fcab773036d256cc4543a336f3b058a33';PzvrJar='9578f224639ae793ea6a6748715550ae5514e3840218e1d03f2e36e5d3d26a37';ViewpointJar='afa5829d16b3785b0e62673376da6d2fb4c16b0ba3966d9d4a4ea064f584edc8';ZombieBuddyJar='eb79b9876332010733a8e0d7ce4fe0377846059a9e28859029e2a0fb449f6cf2'}
+$pins=@{GameJar='e1a69eb743ede60b213a0fe7f8b83d4fcab773036d256cc4543a336f3b058a33';PzvrJar='c44c165ca485d24211d1455e792a90b9ca2a44ee478c71a61240a7af4c348e3e';ViewpointJar='afa5829d16b3785b0e62673376da6d2fb4c16b0ba3966d9d4a4ea064f584edc8';ZombieBuddyJar='eb79b9876332010733a8e0d7ce4fe0377846059a9e28859029e2a0fb449f6cf2'}
 foreach($name in $pins.Keys){if((Get-FileHash -LiteralPath (Get-Variable $name -ValueOnly)).Hash.ToLowerInvariant()-ne$pins[$name]){throw ('Unsupported native-held SDK: '+$name)}}
 New-Item -ItemType Directory -Path $run|Out-Null
 $c=Join-Path $run 'classes';$f=Join-Path $run 'native-held-fixtures';$t=Join-Path $run 'tests';New-Item -ItemType Directory -Path $c,$f,$t|Out-Null

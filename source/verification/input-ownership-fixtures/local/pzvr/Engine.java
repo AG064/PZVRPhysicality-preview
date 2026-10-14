@@ -1,0 +1,1 @@
+package local.pzvr;public final class Engine {public static volatile XrBackend.Frame latestInput,latest;public static Settings settings=new Settings();public static boolean worldPresent=true,enabled=true;public static boolean active(){return enabled;}}

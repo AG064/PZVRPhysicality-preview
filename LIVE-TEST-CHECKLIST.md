@@ -8,7 +8,7 @@ Record the preview version, game version, controller/runtime, GPU, refresh rate,
 
 1. Run the same task with the Native controls preset and Presentation preset using the same character, items and selected mods.
 2. Compare native item identity, count, condition, fluid/nutrition, recipe output and world state before and after. Only the intended action may change them.
-3. Repeat hand interactions with left and right physical hands and both dominant-hand settings. Physical hand slots and dominant button mappings are separate.
+3. Repeat hand interactions with left and right physical hands, both aim-hand settings and both native mirror-controller-binding settings. Physical hand slots, aim preference and logical binding slots are separate; check the guide's actual mapping.
 4. Save, quit and reload. Confirm the resulting native state, then repeat an interaction.
 5. Mark parity only after both the native outcome and physical presentation pass. Offline verification covers implementation contracts; this checklist establishes headset and gameplay acceptance.
 

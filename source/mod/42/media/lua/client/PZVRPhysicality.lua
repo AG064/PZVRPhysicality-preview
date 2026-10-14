@@ -18,20 +18,69 @@ local function tick()
     if kind==0 then return end
     local p,item,source,square=PZVRPhysicality.player(),PZVRPhysicality.item(),PZVRPhysicality.source(),PZVRPhysicality.square()
     local side,epoch=PZVRPhysicality.side(),PZVRPhysicality.generation()
+    local ticket=type(PZVRPhysicality.actionTicket)=='function' and PZVRPhysicality.actionTicket() or 0
     local queued=false
     local ok,err=pcall(function()
         if not p or p~=getSpecificPlayer(0) or p:isDead() or p:getVehicle() or p:hasTimedActions()
-            or isClient() or isServer() or not item or not square or (side~=0 and side~=1)
-            or not p:getSquare() or square:isBlockedTo(p:getSquare()) or not square:isAdjacentTo(p:getSquare()) then return end
+            or isClient() or isServer() or not item or not square or (side~=0 and side~=1) then return end
+        local currentSquare=p:getSquare()
+        -- Loot reach admits solid furniture without permitting transfers through walls or doors.
+        if not currentSquare or square~=currentSquare and (not square:isAdjacentTo(currentSquare)
+            or not currentSquare:canReachTo(square)) then return end
+        if type(ticket)~='number' or ticket<=0 or ticket~=ticket or type(PZVRPhysicality.actionAllowedRequest)~='function' then return end
+        local function capture(...) return {n=select('#',...),...} end
+        local function guard(action,committed)
+            local originalValid=action.isValid
+            if type(originalValid)~='function' then return nil end
+            local admitted,attempted,completed,result=true,false,false,nil
+            local function permit(self)
+                if not admitted or self.character~=p or not PZVRPhysicality.actionAllowedRequest(p,side,epoch,ticket) then
+                    admitted=false
+                    return false
+                end
+                return true
+            end
+            action.isValid=function(self,...)
+                if completed or committed and committed() then return originalValid(self,...) end
+                local valid=permit(self) and originalValid(self,...)
+                if not valid then admitted=false end
+                return valid
+            end
+            local function before(self)
+                if self:isValid() then return true end
+                if type(self.forceStop)=='function' then self:forceStop() end
+                return false
+            end
+            local complete,event=action.complete,action.animEvent
+            if type(complete)=='function' then
+                action.complete=function(self,...)
+                    if attempted then if result then return unpack(result,1,result.n) end;return false end
+                    if not before(self) then return false end
+                    attempted=true
+                    result=capture(complete(self,...))
+                    completed=true
+                    return unpack(result,1,result.n)
+                end
+            end
+            if type(event)=='function' then action.animEvent=function(self,...)
+                if completed then return end
+                if not before(self) then return end
+                return event(self,...)
+            end end
+            return before
+        end
         if kind==1 then
             if hand(p,side) or not source or source:getSquare()~=square or source:getItem()~=item then return end
             local action=ISGrabItemAction:new(p,source,10)
             if not action:isValid() or type(action.transferItem)~='function' then return end
+            local done,result=false,nil
+            local permit=guard(action,function() return done end);if not permit then return end
             local original=action.transferItem
-            local done=false
             action.transferItem=function(self,world,...)
                 local function capture(...) return {n=select('#',...),...} end
-                local result=capture(original(self,world,...))
+                if done then return unpack(result,1,result.n) end
+                if not permit(self) then return end
+                result=capture(original(self,world,...))
                 if world==source and not done then
                     done=true
                     local transferred,transferError=pcall(function()
@@ -53,11 +102,16 @@ local function tick()
                 or not inventory:contains(item) or not inventory:getParent() or inventory:getParent():getSquare()~=square
                 or inventory:getParent():getContainerIndex(inventory)<0 then return end
             local action=ISInventoryTransferAction:new(p,item,inventory,p:getInventory(),10)
-            if not action:isValid() or type(action.transferItem)~='function' then return end
-            local original=action.transferItem;local done=false
+            if not action:isValid() or type(action.transferItem)~='function' or type(action.setOnComplete)~='function' then return end
+            action:setOnComplete(function() end)
+            local done,result=false,nil
+            local permit=guard(action,function() return done end);if not permit then return end
+            local original=action.transferItem
             action.transferItem=function(self,transferred,...)
                 local function capture(...) return {n=select('#',...),...} end
-                local result=capture(original(self,transferred,...))
+                if done then return unpack(result,1,result.n) end
+                if not permit(self) then return end
+                result=capture(original(self,transferred,...))
                 if transferred==item and not done then
                     done=true
                     local ok,error=pcall(function()
@@ -84,15 +138,21 @@ local function tick()
                 qx=PZVRPhysicality.storageQx(),qy=PZVRPhysicality.storageQy(),qz=PZVRPhysicality.storageQz(),qw=PZVRPhysicality.storageQw(),raw=true}
             if not PZVRPlacement or not PZVRPlacement.pose(pose) then return end
             local action=ISInventoryTransferAction:new(p,item,p:getInventory(),destination,10)
-            if not action:isValid() or type(action.transferItem)~='function' then return end
-            local original=action.transferItem;local done=false
+            if not action:isValid() or type(action.transferItem)~='function' or type(action.setOnComplete)~='function' then return end
+            action:setOnComplete(function() end)
+            local done,result=false,nil
+            local permit=guard(action,function() return done end);if not permit then return end
+            local original=action.transferItem
             action.transferItem=function(self,transferred,...)
                 local function capture(...) return {n=select('#',...),...} end
-                local result=capture(original(self,transferred,...))
+                if done then return unpack(result,1,result.n) end
+                if not permit(self) then return end
+                result=capture(original(self,transferred,...))
                 if transferred==item and not done then
                     done=true
                     local ok,error=pcall(function()
                         if p==getSpecificPlayer(0) and self.character==p and not isClient() and not isServer()
+                            and PZVRPhysicality.actionAllowedRequest(p,side,epoch,ticket)
                             and item:getContainer()==destination and destination:contains(item) and not item:getWorldItem() then
                             PZVRPlacement.stow(destination,item,key,pose)
                             PZVRPhysicality.storedReleased(p,item,side,epoch,destination,vx,vy,vh)
@@ -103,7 +163,7 @@ local function tick()
                 return unpack(result,1,result.n)
             end
             local unequip=ISUnequipAction:new(p,item,1,'transfer')
-            if not unequip:isValid() then return end
+            if not unequip:isValid() or not guard(unequip) then return end
             ISTimedActionQueue.add(unequip);ISTimedActionQueue.add(action);queued=true
         elseif kind==2 then
             if hand(p,side)~=item or not p:getInventory():contains(item) or item:getWorldItem() or not square:TreatAsSolidFloor() then return end
@@ -114,11 +174,14 @@ local function tick()
             local action=ISDropWorldItemAction:new(p,item,square,x,y,z,0,false)
             action.isPlaceItem=true
             if not action:isValid() or type(action.complete)~='function' then return end
+            local done,result=false,nil
+            local permit=guard(action,function() return done end);if not permit then return end
             local original=action.complete
-            local done=false
             action.complete=function(self,...)
                 local function capture(...) return {n=select('#',...),...} end
-                local result=capture(original(self,...))
+                if done then return unpack(result,1,result.n) end
+                if not permit(self) then return end
+                result=capture(original(self,...))
                 if not done and self.character==p and self.item==item then
                     done=true
                     local dropped,dropError=pcall(function()
@@ -132,7 +195,7 @@ local function tick()
                 return unpack(result,1,result.n)
             end
             local unequip=ISUnequipAction:new(p,item,1,'drop')
-            if not unequip:isValid() then return end
+            if not unequip:isValid() or not guard(unequip) then return end
             ISTimedActionQueue.add(unequip);ISTimedActionQueue.add(action);queued=true
         end
     end)

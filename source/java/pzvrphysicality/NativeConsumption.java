@@ -7,17 +7,19 @@ public final class NativeConsumption {
  private static final ConsumePolicy<InventoryItem> policy=new ConsumePolicy<>();
  private static final UtensilPolicy<InventoryItem> utensils=new UtensilPolicy<>();
  private static final Object depthConsumer=new Object();
+ private static NativeActionAuthority.Stamp biteAuthority;
+ private static final NativeActionAuthority.Stamp[] actionAuthority=new NativeActionAuthority.Stamp[2];private static final long[] authorityTicket=new long[2];
  private static volatile boolean enabled,requireTrigger=true;private static volatile double mouthDown=.11,radius=.105;
  private static IsoPlayer actor;private static long generation;private static String status="Physical eating and drinking Off";
  public static void configure(boolean value,boolean trigger,double down,double distance){
   if(!Double.isFinite(down)||down<.04||down>.2||!Double.isFinite(distance)||distance<.05||distance>.16)throw new IllegalArgumentException("Mouth calibration");
-  AuthoredDepth.request(depthConsumer,value);enabled=value;requireTrigger=trigger;mouthDown=down;radius=distance;policy.reset();utensils.reset();UtensilCapture.clear();WorldRigCapture.requestUtensils(value);actor=null;generation++;
+  AuthoredDepth.request(depthConsumer,value);enabled=value;requireTrigger=trigger;mouthDown=down;radius=distance;policy.reset();utensils.reset();biteAuthority=null;java.util.Arrays.fill(actionAuthority,null);java.util.Arrays.fill(authorityTicket,0);UtensilCapture.clear();WorldRigCapture.requestUtensils(value);actor=null;generation++;
   status=value?"Physical eating/drinking armed; move items away from mouth first":"Physical eating and drinking Off";
  }
  private static IsoPlayer player(){return IsoPlayer.players.length==0?null:IsoPlayer.players[0];}
  /** NativeRig ordinary item slots remain physical left=secondary, right=primary. Preference only routes button roles. */
  static InventoryItem hand(IsoPlayer p,int side){return p==null||side<0||side>1?null:side==1?p.getPrimaryHandItem():p.getSecondaryHandItem();}
- private static boolean eligible(IsoPlayer p){return enabled&&p!=null&&!p.isDead()&&p.getVehicle()==null&&p.getSquare()!=null&&!zombie.network.GameClient.client&&!zombie.network.GameServer.server&&!zombie.GameTime.isGamePaused()&&!VrApi.fullHud()&&!VrApi.pointerActive()&&!zombie.ui.UIManager.isModalVisible()&&!zombie.core.Core.getInstance().isDoingTextEntry();}
+ private static boolean eligible(IsoPlayer p){return enabled&&!NativeInputOwnership.globalBlocked()&&p!=null&&!p.isDead()&&p.getVehicle()==null&&p.getSquare()!=null&&!zombie.network.GameClient.client&&!zombie.network.GameServer.server&&!zombie.GameTime.isGamePaused()&&!VrApi.fullHud()&&!VrApi.pointerActive()&&!zombie.ui.UIManager.isModalVisible()&&!zombie.core.Core.getInstance().isDoingTextEntry();}
  private static MouthMath.Pose pose(Math3.Pose pose){if(pose==null||pose.position()==null||pose.rotation()==null)return null;var p=pose.position();var q=pose.rotation();return new MouthMath.Pose(new MouthMath.Vec(p.x(),p.y(),p.z()),new MouthMath.Rotation(q.x(),q.y(),q.z(),q.w()));}
  private record Sample(ConsumePolicy.Kind kind,InventoryItem item,boolean near,boolean flow,boolean trigger){}
  private static ConsumePolicy.Kind kind(IsoPlayer p,InventoryItem item){
@@ -28,7 +30,7 @@ public final class NativeConsumption {
   return ConsumePolicy.Kind.FOOD;
  }
  private static Sample sample(IsoPlayer p,int side,long now){
-  if(!eligible(p)||PzvrContacts.sample(now)==null)return null;var frame=Engine.latestInput;if(frame==null||frame.head()==null)return null;
+  if(!eligible(p)||!NativeInputOwnership.allows(side)||PzvrContacts.sample(now)==null)return null;var frame=Engine.latestInput;if(frame==null||frame.head()==null)return null;
   var hand=side==0?frame.left():frame.right();if(hand==null||!hand.tracked())return null;
   var item=hand(p,side);var kind=kind(p,item);if(kind==null||utensils.reserved(item))return null;
   try{
@@ -39,12 +41,12 @@ public final class NativeConsumption {
  }
  public static boolean enabled(){return enabled;}
  public static double mouthRadius(){return radius;}
- public static boolean utensilEligible(IsoPlayer p,InventoryItem tool,InventoryItem food,int side){
-  return side>=0&&side<=1&&eligible(p)&&tool!=null&&tool!=food&&UtensilCapture.supportedPair(tool,food)
+ public static boolean utensilEligible(IsoPlayer p,InventoryItem tool,InventoryItem food,int side){try(var ownership=NativeInputOwnership.open()){
+  return side>=0&&side<=1&&NativeInputOwnership.allows(side)&&NativeInputOwnership.allows(1-side)&&eligible(p)&&tool!=null&&tool!=food&&UtensilCapture.supportedPair(tool,food)
    &&tool.getCondition()>0&&(tool.hasTag(ItemTag.SPOON)||tool.hasTag(ItemTag.FORK))&&tool.getContainer()==p.getInventory()
    &&tool.getWorldItem()==null&&!tool.isSealed()&&p.getInventory().contains(tool)&&hand(p,side)==tool
    &&hand(p,1-side)==food&&kind(p,food)==ConsumePolicy.Kind.FOOD;
- }
+ }}
  private static Sample utensilSample(IsoPlayer p,int side,long now,boolean load){
   var tool=p==null?null:hand(p,side);var food=p==null?null:hand(p,1-side);var input=Engine.latestInput;
   var hand=input==null?null:side==0?input.left():input.right();var source=input==null?null:side==0?input.right():input.left();
@@ -53,24 +55,26 @@ public final class NativeConsumption {
   }
   var contact=UtensilCapture.sample(p,side,tool,food,now);
   if(contact==null){if(load)utensils.cancel(side);return null;}
-  if(load){var f=(Food)food;var before=utensils.bite();var loaded=utensils.sample(side,tool,food,f.getHungChange(),f.getBaseHunger(),contact.foodContact(),contact.mouthContact(),true,p.hasTimedActions()||NativeItems.request()!=null||policy.busy()||!NativeItems.supportsPhysicalGestures(p),now);if(loaded!=null&&loaded!=before&&!UtensilCapture.loaded(p,loaded,now))utensils.cancel(side);}
+  if(load){var f=(Food)food;var before=utensils.bite();var loaded=utensils.sample(side,tool,food,f.getHungChange(),f.getBaseHunger(),contact.foodContact(),contact.mouthContact(),true,p.hasTimedActions()||NativeItems.request()!=null||policy.busy()||!NativeItems.supportsPhysicalGestures(p),now);if(loaded!=null&&loaded!=before){biteAuthority=NativeActionAuthority.stamp(side,1-side);if(!NativeActionAuthority.current(biteAuthority)||!UtensilCapture.loaded(p,loaded,now))utensils.cancel(side);}}
   var bite=utensils.bite();if(bite==null||bite.side()!=side||bite.tool()!=tool||bite.food()!=food)return null;
   return new Sample(ConsumePolicy.Kind.UTENSIL,food,utensils.ready(side,tool,food)&&!contact.foodContact()&&contact.mouthContact(),true,requireTrigger&&hand.down(XrBackend.TRIGGER));
  }
- public static void tick(){
-  if(!enabled)return;var p=player();if(p!=actor){policy.reset();utensils.reset();UtensilCapture.clear();actor=p;generation++;}
+ public static void tick(){try(var ownership=NativeInputOwnership.open()){
+  if(!enabled)return;var p=player();if(p!=actor){policy.reset();utensils.reset();biteAuthority=null;java.util.Arrays.fill(actionAuthority,null);java.util.Arrays.fill(authorityTicket,0);UtensilCapture.clear();actor=p;generation++;}
+  for(int side=0;side<2;side++)if(!NativeInputOwnership.allows(side)||actionAuthority[side]!=null&&!NativeActionAuthority.current(actionAuthority[side])){policy.cancel(side);actionAuthority[side]=null;authorityTicket[side]=0;}
+  var reservation=utensils.bite();if(reservation!=null&&!NativeActionAuthority.current(biteAuthority)){policy.cancel(reservation.side());utensils.cancel(reservation.side());biteAuthority=null;}
   long now=System.nanoTime();policy.reconcile(p!=null&&p.hasTimedActions(),now);var before=utensils.bite();
   if(before!=null&&utensils.ticket()>0&&!policy.owns(utensils.ticket(),before.side(),before.food()))utensils.finish(utensils.ticket());
   Sample[] contacts=new Sample[2];for(int side=0;side<2;side++)contacts[side]=utensilSample(p,side,now,true);
   if(before!=utensils.bite()&&utensils.bite()!=null)status="One utensil bite loaded; withdraw from food and approach the mouth";
-  for(int side=0;side<2;side++){var s=contacts[side];if(s==null)s=sample(p,side,now);var request=policy.sample(side,s==null?null:s.item,s==null?null:s.kind,s!=null&&s.near,s!=null&&s.flow,s!=null&&s.trigger,s!=null,p!=null&&p.hasTimedActions()||NativeItems.request()!=null||!NativeItems.supportsPhysicalGestures(p),requireTrigger,now);if(request!=null)status=request.kind()==ConsumePolicy.Kind.DRINK?"Sip requested":request.kind()==ConsumePolicy.Kind.UTENSIL?"Utensil bite requested":"Bite requested";}
- }
- public static boolean ownsTrigger(int side){if(side<0||side>1)return false;long now=System.nanoTime();var p=player();var tool=p==null?null:hand(p,side);var food=p==null?null:hand(p,1-side);
+  for(int side=0;side<2;side++){var s=contacts[side];if(s==null)s=sample(p,side,now);var request=policy.sample(side,s==null?null:s.item,s==null?null:s.kind,s!=null&&s.near,s!=null&&s.flow,s!=null&&s.trigger,s!=null,p!=null&&p.hasTimedActions()||NativeItems.request()!=null||!NativeItems.supportsPhysicalGestures(p),requireTrigger,now);if(request!=null){actionAuthority[side]=NativeActionAuthority.stamp(side,request.kind()==ConsumePolicy.Kind.UTENSIL?1-side:-1);authorityTicket[side]=request.ticket();status=request.kind()==ConsumePolicy.Kind.DRINK?"Sip requested":request.kind()==ConsumePolicy.Kind.UTENSIL?"Utensil bite requested":"Bite requested";}}
+ }}
+ public static boolean ownsTrigger(int side){try(var ownership=NativeInputOwnership.open()){if(side<0||side>1||!NativeInputOwnership.allows(side))return false;long now=System.nanoTime();var p=player();var tool=p==null?null:hand(p,side);var food=p==null?null:hand(p,1-side);
   if(!NativeItems.supportsPhysicalGestures(p))return false;
   if(utensilEligible(p,tool,food,side)&&PzvrContacts.sample(now)!=null){var contact=UtensilCapture.sample(p,side,tool,food,now);if(contact!=null&&(contact.foodContact()||utensils.ready(side,tool,food)&&contact.mouthContact()))return true;}
   var s=sample(p,side,now);return s!=null&&s.near&&(s.kind==ConsumePolicy.Kind.FOOD||s.flow);
- }
- public static String routeTrigger(String key,String original){if(!enabled||!key.equals("dominant.trigger")&&!key.equals("other.trigger"))return original;return ConsumeRoute.resolve(ownsTrigger(0),ownsTrigger(1),VrApi.dominantHandIndex(),key,original);}
+ }}
+ public static String routeTrigger(String key,String original){try(var ownership=NativeInputOwnership.open()){if(!enabled||!key.equals("dominant.trigger")&&!key.equals("other.trigger"))return original;return ConsumeRoute.resolve(ownsTrigger(0),ownsTrigger(1),NativeInputOwnership.bindingHandIndex(),key,original);}}
  public static boolean suppressAutoDrink(Object p){return enabled&&ConsumeRoute.suppressAuto(true,Engine.active(),Engine.worldPresent,p!=null&&p==player(),zombie.network.GameClient.client||zombie.network.GameServer.server);}
  public static ConsumePolicy.Request<InventoryItem> request(){return policy.request();}
  public static long generation(){return generation;}
@@ -78,20 +82,20 @@ public final class NativeConsumption {
  public static double mouthDown(){return mouthDown;}
  public static boolean requireTrigger(){return requireTrigger;}
  public static InventoryItem tool(){var bite=utensils.bite();return bite==null?null:bite.tool();}
- public static UtensilPolicy.Bite<InventoryItem> bite(){return utensils.bite();}
- public static boolean acknowledge(long ticket,boolean queued){boolean requested=queued;var request=policy.request();boolean utensil=request!=null&&request.ticket()==ticket&&request.kind()==ConsumePolicy.Kind.UTENSIL;
-  if(queued&&!NativeItems.supportsPhysicalGestures(player()))queued=false;
+ public static UtensilPolicy.Bite<InventoryItem> bite(){try(var ownership=NativeInputOwnership.open()){return NativeActionAuthority.current(biteAuthority)?utensils.bite():null;}}
+ public static boolean acknowledge(long ticket,boolean queued){try(var ownership=NativeInputOwnership.open()){boolean requested=queued;var request=policy.request();boolean utensil=request!=null&&request.ticket()==ticket&&request.kind()==ConsumePolicy.Kind.UTENSIL;
+  if(queued&&(request==null||authorityTicket[request.side()]!=ticket||!NativeActionAuthority.current(actionAuthority[request.side()])||!NativeItems.supportsPhysicalGestures(player())))queued=false;
   if(utensil&&queued&&!utensils.bind(ticket,request.side(),request.item()))queued=false;
   boolean acknowledged=policy.acknowledge(ticket,queued,System.nanoTime());if(utensil&&(!queued||!acknowledged))utensils.cancel(request.side());return acknowledged&&(!requested||queued)&&(!utensil||queued);
- }
- public static double portion(){var r=request();if(r==null)return 0;if(r.kind()==ConsumePolicy.Kind.UTENSIL){var bite=utensils.bite();return bite!=null&&bite.side()==r.side()&&bite.food()==r.item()?bite.portion():0;}return r.kind()==ConsumePolicy.Kind.FOOD?MouthMath.biteFraction(((Food)r.item()).getBaseHunger()):MouthMath.sipFraction(r.item().getFluidContainer().getAmount());}
- public static boolean valid(IsoPlayer p,InventoryItem item,int side,long ticket,long epoch){
-  if(epoch!=generation||p!=actor||!policy.owns(ticket,side,item))return false;long now=System.nanoTime();var bite=utensils.bite();
+ }}
+ public static double portion(){try(var ownership=NativeInputOwnership.open()){var r=request();if(r==null)return 0;if(r.kind()==ConsumePolicy.Kind.UTENSIL){var bite=utensils.bite();return bite!=null&&bite.side()==r.side()&&bite.food()==r.item()?bite.portion():0;}return r.kind()==ConsumePolicy.Kind.FOOD?MouthMath.biteFraction(((Food)r.item()).getBaseHunger()):MouthMath.sipFraction(r.item().getFluidContainer().getAmount());}}
+ public static boolean valid(IsoPlayer p,InventoryItem item,int side,long ticket,long epoch){try(var ownership=NativeInputOwnership.open()){
+  if(side<0||side>1||epoch!=generation||p!=actor||authorityTicket[side]!=ticket||!NativeActionAuthority.current(actionAuthority[side])||!policy.owns(ticket,side,item))return false;long now=System.nanoTime();var bite=utensils.bite();
   if(bite!=null&&utensils.owns(ticket,side,bite.tool(),item)){
    var s=utensilSample(p,side,now,true);return s!=null&&s.item==item&&s.near&&(!requireTrigger||s.trigger);
   }
   var s=sample(p,side,now);return s!=null&&s.item==item&&s.near&&(!requireTrigger||s.trigger)&&(s.kind==ConsumePolicy.Kind.FOOD||s.flow);
- }
- public static void finish(long ticket){policy.finish(ticket,System.nanoTime());utensils.finish(ticket);}
+ }}
+ public static void finish(long ticket){try(var ownership=NativeInputOwnership.open()){policy.finish(ticket,System.nanoTime());utensils.finish(ticket);for(int side=0;side<2;side++)if(authorityTicket[side]==ticket){authorityTicket[side]=0;actionAuthority[side]=null;}}}
  private NativeConsumption(){}
 }

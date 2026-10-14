@@ -31,6 +31,8 @@ public final class ConsumePolicy<T> {
  public boolean owns(long ticket,int side,T item){return active!=null&&active.ticket==ticket&&active.side==side&&active.item==item;}
  public void finish(long ticket,long now){if(active!=null&&active.ticket==ticket){active=null;retryAt=now+250_000_000L;}}
  public void reconcile(boolean nativeBusy,long now){if(active!=null&&!nativeBusy&&now-activeSince>250_000_000L){active=null;retryAt=now+250_000_000L;}}
+ /** Losing native ownership retires only this physical hand and requires a fresh neutral approach. */
+ public void cancel(int side){var h=hand(side);h.ready=false;h.away=true;h.contactSince=-1;if(pending!=null&&pending.side==side)pending=null;if(active!=null&&active.side==side)active=null;}
  public void reset(){pending=active=null;retryAt=0;for(var h:java.util.List.of(left,right)){h.item=null;h.ready=false;h.away=true;h.contactSince=-1;}}
  private ConsumePolicy(int unused){}
  public ConsumePolicy(){this(0);}

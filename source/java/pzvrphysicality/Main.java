@@ -54,6 +54,9 @@ public final class Main {
  public static void storagePhysicsTick(){try{NativeStorage.physicsTick();}catch(RuntimeException|LinkageError error){try{NativeStorage.physicsConfigure(false);}catch(Exception|LinkageError cleanup){error.addSuppressed(cleanup);}System.err.println("[PZVR Storage] Physics disabled: "+error);}finally{reconcileStorage();}}
  public static void tick(){moveableModelsTick();worldVisualsTick();windowMotionTick();GripAttemptDiagnostics.begin(ready);try{NativeItems.tick();}catch(RuntimeException|LinkageError error){try{NativeItems.configure(false);}catch(Exception|LinkageError cleanup){error.addSuppressed(cleanup);}System.err.println("[PZVR Physicality] Disabled after error: "+error);}finally{reconcileItems();GripAttemptDiagnostics.end();}}
  private static NativeItems.Request r(){return NativeItems.request();}
+ public static boolean actionAllowed(IsoPlayer actor,int side,long epoch){if(!ready)return false;try{return NativeItems.actionAllowed(actor,side,epoch);}catch(RuntimeException|LinkageError unavailable){return false;}}
+ public static long actionTicket(){if(!ready)return 0;try{return NativeItems.requestTicket();}catch(RuntimeException|LinkageError unavailable){return 0;}}
+ public static boolean actionAllowedRequest(IsoPlayer actor,int side,long epoch,long ticket){if(!ready)return false;try{return NativeItems.actionAllowedRequest(actor,side,epoch,ticket);}catch(RuntimeException|LinkageError unavailable){return false;}}
  public static int action(){return r()==null?0:r().kind();}public static IsoPlayer player(){return IsoPlayer.players[0];}
  public static InventoryItem item(){return r()==null?null:r().item();}public static IsoWorldInventoryObject source(){return r()==null?null:r().source();}public static IsoGridSquare square(){return r()==null?null:r().square();}
  public static zombie.inventory.ItemContainer inventorySource(){return r()==null?null:r().container();}

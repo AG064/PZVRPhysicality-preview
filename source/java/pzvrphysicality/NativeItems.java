@@ -32,6 +32,11 @@ public final class NativeItems {
   public void add(IsoGridSquare square,int index,IsoWorldInventoryObject object,boolean world){if(world)square.getWorldObjects().add(index,object);else square.getObjects().add(index,object);}
  };
  private static volatile boolean enabled;private static Request pending;private static String status="Physical floor items Off";
+ private static NativeActionAuthority.Stamp pendingAuthority;
+ private static final Request[] queued=new Request[2];private static final NativeActionAuthority.Stamp[] queuedAuthority=new NativeActionAuthority.Stamp[2];
+ private static final boolean[] queuedRetired=new boolean[2];
+ private static long requestSequence,pendingTicket;private static java.lang.ref.WeakReference<Request> ticketedPending=new java.lang.ref.WeakReference<>(null);
+ private static final long[] queuedTickets=new long[2];
  private record Visual(java.lang.ref.WeakReference<IsoWorldInventoryObject> source,long time,long epoch,float[] pose){}
  private static volatile Map<InventoryItem,Visual> visualPoses=Map.of();
  public static float[] visualPose(InventoryItem item,IsoWorldInventoryObject source){
@@ -53,21 +58,21 @@ public final class NativeItems {
   if(p.hasTimedActions())return "Floor gesture native timed action active";
   return "Floor gesture guard admitted; "+PzvrContacts.status();
  }
- public static boolean ownsGrip(int side){
-  if(side<0||side>1)return false;var p=IsoPlayer.players.length==0?null:IsoPlayer.players[0];if(p==null||p!=actor||!eligible(p)||!supportsPhysicalGestures(p))return false;
+ public static boolean ownsGrip(int side){try(var ownership=NativeInputOwnership.open()){
+  if(side<0||side>1||!NativeInputOwnership.allows(side))return false;var p=IsoPlayer.players.length==0?null:IsoPlayer.players[0];if(p==null||p!=actor||!eligible(p)||!supportsPhysicalGestures(p))return false;
   long now=System.nanoTime();var frame=PzvrContacts.sample(now);var h=frame==null?null:frame.hand(side);if(h==null)return false;
   var held=grabs.held(side);if(held!=null&&held==hand(p,side)&&held.getContainer()==p.getInventory()&&held.getWorldItem()==null&&p.getInventory().contains(held))return true;
   if(pending!=null&&pending.side()==side||grabs.hasPending(side,now))return true;
   if(p.hasTimedActions()||hand(p,side)!=null||p.getCell()==null)return false;
   return nearest(p,h)!=null||NativeStorage.nearest(h.centre(),now)!=null;
- }
+ }}
  /** Ordinary gesture creation defers to upstream pistol support and foreign hand-model previews. */
- public static boolean supportsPhysicalGestures(IsoPlayer p){
-  if(p==null)return false;var pistol=VrControls.supportedPistol;int side=VrControls.pistolHand;
+ public static boolean supportsPhysicalGestures(IsoPlayer p){try(var ownership=NativeInputOwnership.open()){
+  if(p==null||NativeInputOwnership.globalBlocked())return false;var pistol=VrControls.supportedPistol;int side=VrControls.pistolHand;
   if(pistol!=null&&(side<0||side>1||hand(p,side)==pistol&&hand(p,1-side)==null))return false;
   var actions=p.getCharacterActions();if(actions==null||actions.isEmpty())return true;var action=actions.get(0);
   return action!=null&&(!action.overrideHandModels||action.getPrimaryHandItem()==p.getPrimaryHandItem()&&action.getSecondaryHandItem()==p.getSecondaryHandItem());
- }
+ }}
  public static String status(){return status+"; "+furniture.status()+"; "+MeshRecovery.status()+"; "+GroundItemCapture.status()+(physics==null?"":"; "+physics.preparationStatus());}
  public static long epoch(){return epoch;}
  public static void configure(boolean next)throws Exception {
@@ -77,7 +82,7 @@ public final class NativeItems {
  }
  private static void reset(){
   if(physics!=null)for(var entry:loose.entrySet()){var state=physics.state(entry.getKey());if(state!=null)NativeItemPlacement.save(entry.getKey(),entry.getValue(),state);}
-  grabs.reset();MoveableCarry.clear();MoveableDropBootstrap.clear();pending=null;actor=null;epoch++;visualPoses=Map.of();savedVisuals=Map.of();nextSavedScan=nextShapePoll=0;resting.clear();savedAt.clear();Arrays.fill(previous,null);Arrays.fill(previousTime,0);loose.clear();simulatedPacks.clear();lastStep=nextEnvironment=0;furniture.clear();GroundItemCapture.clear();if(physics!=null){physics.close();physics=null;}
+  grabs.reset();MoveableCarry.clear();MoveableDropBootstrap.clear();pending=null;pendingAuthority=null;Arrays.fill(queued,null);Arrays.fill(queuedAuthority,null);Arrays.fill(queuedRetired,false);actor=null;epoch++;visualPoses=Map.of();savedVisuals=Map.of();nextSavedScan=nextShapePoll=0;resting.clear();savedAt.clear();Arrays.fill(previous,null);Arrays.fill(previousTime,0);loose.clear();simulatedPacks.clear();lastStep=nextEnvironment=0;furniture.clear();GroundItemCapture.clear();if(physics!=null){physics.close();physics=null;}
  }
  private static boolean eligible(IsoPlayer p){return enabled&&p!=null&&!p.isDead()&&p.getVehicle()==null&&p.getSquare()!=null&&!zombie.network.GameClient.client&&!zombie.network.GameServer.server&&!zombie.GameTime.isGamePaused()&&!VrApi.fullHud()&&!VrApi.pointerActive()&&!zombie.ui.UIManager.isModalVisible()&&!zombie.core.Core.getInstance().isDoingTextEntry();}
  private static IsoGridSquare destination(IsoPlayer p,ContactFrame.Point point){
@@ -102,7 +107,7 @@ public final class NativeItems {
   if(before!=null&&dt>0&&dt<150_000_000L){double seconds=dt/1e9;velocity[side][0]=Math.clamp((point.x()-before.x())/seconds,-12,12);velocity[side][1]=Math.clamp((point.y()-before.y())/seconds,-12,12);velocity[side][2]=Math.clamp((point.height()-before.height())/seconds,-12,12);}
   else Arrays.fill(velocity[side],0);previous[side]=point;previousTime[side]=now;
  }
- public static void tick(){
+ public static void tick(){try(var ownership=NativeInputOwnership.open()){
   if(!enabled)return;long now=System.nanoTime();IsoPlayer p=IsoPlayer.players.length==0?null:IsoPlayer.players[0];
   if(p!=actor){reset();actor=p;}
   var frame=PzvrContacts.sample(now);
@@ -110,36 +115,48 @@ public final class NativeItems {
   if(pending!=null&&now-pending.created()>250_000_000L){grabs.cancel(pending.side());MoveableCarry.cancel();pending=null;}
   updatePhysics(p,now);boolean gestures=supportsPhysicalGestures(p);if(!gestures)status="Native pistol support or hand-model preview owns physical gestures";
   for(int side=0;side<2;side++){
-   var h=frame.hand(side);if(h==null){grabs.sample(side,false,false,now);continue;}sampleVelocity(h,now);if(!gestures)continue;
+   var h=frame.hand(side);if(h==null){grabs.sample(side,false,false,now);queued[side]=null;queuedAuthority[side]=null;continue;}sampleVelocity(h,now);
+   if(!gestures||!NativeInputOwnership.allows(side)){
+    grabs.sample(side,h.grip(),false,now);queued[side]=null;queuedAuthority[side]=null;queuedRetired[side]=true;if(pending!=null&&pending.side()==side){pending=null;pendingAuthority=null;}
+    status="Native hand gesture owns physical item requests";continue;
+   }
    boolean body=RouteModes.body()&&NativeBody.ownsGrip(side)||RouteModes.curtains()&&NativeCurtains.reservesGrip(side)||RouteModes.backpack()&&BackpackContents.ownsGrip(side);boolean carrying=grabs.held(side)!=null&&grabs.held(side)==hand(p,side);var edge=grabs.sample(side,h.grip(),!body||carrying,now);if(body||pending!=null||p.hasTimedActions())continue;
    var held=grabs.held(side);if(held!=null&&held!=hand(p,side))grabs.released(side,held);
    if(edge==GrabLifecycle.Edge.GRAB&&hand(p,side)==null){
     var source=nearest(p,h);var stored=NativeStorage.nearest(h.centre(),now);
     if(stored!=null&&(source==null||stored.bounds().distance(h.centre())<h.centre().distance(new ContactFrame.Point(source.getWorldPosX(),source.getWorldPosY(),source.getWorldPosZ()*STOREY)))){
-     if(grabs.reserve(side,stored.item(),now)){pending=new Request(3,side,stored.item(),null,stored.square(),h.centre(),velocity[side],epoch,now,stored.container(),new float[]{0,0,0,1},null);status="Native open-storage pickup selected";}
-    }else if(source!=null&&grabs.reserve(side,source.getItem(),now)){MoveableCarry.reserve(p,source.getItem(),source,side,epoch);pending=new Request(1,side,source.getItem(),source,source.getSquare(),h.centre(),velocity[side],epoch,now,null,new float[]{0,0,0,1},null);status="Native floor pickup selected";}
+     if(grabs.reserve(side,stored.item(),now)){pending=new Request(3,side,stored.item(),null,stored.square(),h.centre(),velocity[side],epoch,now,stored.container(),new float[]{0,0,0,1},null);pendingAuthority=NativeActionAuthority.stamp(side);status="Native open-storage pickup selected";}
+    }else if(source!=null&&grabs.reserve(side,source.getItem(),now)){MoveableCarry.reserve(p,source.getItem(),source,side,epoch);pending=new Request(1,side,source.getItem(),source,source.getSquare(),h.centre(),velocity[side],epoch,now,null,new float[]{0,0,0,1},null);pendingAuthority=NativeActionAuthority.stamp(side);status="Native floor pickup selected";}
    }
    else if(grabs.held(side)!=null&&edge==GrabLifecycle.Edge.RELEASE){
     var item=grabs.held(side);
     if(item!=hand(p,side)||item.getContainer()!=p.getInventory()||item.getWorldItem()!=null){grabs.released(side,item);continue;}
     var rig=WorldRigCapture.latest;var hand=rig!=null&&rig.actor()==p&&rig.fresh(now)?rig.hand(side):null;
     var rotation=hand==null?new float[]{0,0,0,1}:Arrays.copyOfRange(StoragePose.hand(hand),3,7);var stored=NativeStorage.destination(hand,item,now);
-    if(stored!=null){pending=new Request(4,side,item,null,stored.square(),hand.grip(),velocity[side],epoch,now,stored.container(),rotation,stored);status="Native return-to-storage selected";}
-    else{var square=destination(p,h.centre());if(square!=null){MoveableCarry.planDrop(p,item,side,epoch);pending=new Request(2,side,item,null,square,h.centre(),velocity[side],epoch,now,null,rotation,null);status="Native drop selected";}}
+    if(stored!=null){pending=new Request(4,side,item,null,stored.square(),hand.grip(),velocity[side],epoch,now,stored.container(),rotation,stored);pendingAuthority=NativeActionAuthority.stamp(side);status="Native return-to-storage selected";}
+    else{var square=destination(p,h.centre());if(square!=null){MoveableCarry.planDrop(p,item,side,epoch);pending=new Request(2,side,item,null,square,h.centre(),velocity[side],epoch,now,null,rotation,null);pendingAuthority=NativeActionAuthority.stamp(side);status="Native drop selected";}}
    }
   }
- }
+ }}
  public static Request request(){return pending;}
+ private static synchronized long ticketFor(Request request){if(request==null)return 0;if(ticketedPending.get()!=request){if(requestSequence>=9_007_199_254_740_991L)throw new IllegalStateException("Native item request ticket exhausted");pendingTicket=++requestSequence;ticketedPending=new java.lang.ref.WeakReference<>(request);}return pendingTicket;}
+ /** A new request object gets a distinct exact-Lua-safe ticket, even for the same item and actor epoch. */
+ public static long requestTicket(){return ticketFor(pending);}
  public static boolean gestureBusy(int side){return side>=0&&side<2&&(pending!=null&&pending.side()==side||grabs.held(side)!=null);}
- public static void adoptBody(IsoPlayer p,InventoryItem item,int side){var f=PzvrContacts.sample(System.nanoTime());var h=f==null?null:f.hand(side);if(enabled&&p==actor&&eligible(p)&&side>=0&&side<2&&h!=null&&hand(p,side)==item&&item.getContainer()==p.getInventory()&&p.getInventory().contains(item)&&item.getWorldItem()==null){grabs.reconcile(hand(p,0),hand(p,1));grabs.adopt(side,item,h.grip());}}
- public static void acknowledge(boolean queued){if(pending!=null&&!queued){grabs.cancel(pending.side());MoveableCarry.cancel();}pending=null;}
- public static boolean canReceive(IsoPlayer p,InventoryItem item,int side,long generation){var f=PzvrContacts.sample(System.nanoTime());return generation==epoch&&p==actor&&eligible(p)&&f!=null&&f.hand(side)!=null&&f.hand(side).grip()&&grabs.pending(side,item,System.nanoTime())&&hand(p,side)==null&&item.getContainer()==p.getInventory()&&item.getWorldItem()==null&&p.getInventory().contains(item);}
- public static void received(IsoPlayer p,InventoryItem item,int side,long generation){if(p==actor&&generation==epoch&&hand(p,side)==item&&item.getContainer()==p.getInventory()){if(grabs.confirm(side,item,System.nanoTime()))MoveableCarry.received(p,item,side,generation);NativeItemPlacement.clear(item);resting.remove(item);savedAt.remove(item);if(loose.remove(item)!=null&&physics!=null)physics.remove(item);simulatedPacks.remove(item);}}
- public static void dropped(IsoPlayer p,InventoryItem item,int side,long generation,double vx,double vy,double vh){
+ public static void adoptBody(IsoPlayer p,InventoryItem item,int side){try(var ownership=NativeInputOwnership.open()){var f=PzvrContacts.sample(System.nanoTime());var h=f==null?null:f.hand(side);if(enabled&&p==actor&&eligible(p)&&NativeInputOwnership.allows(side)&&h!=null&&hand(p,side)==item&&item.getContainer()==p.getInventory()&&p.getInventory().contains(item)&&item.getWorldItem()==null){grabs.reconcile(hand(p,0),hand(p,1));grabs.adopt(side,item,h.grip());queuedRetired[side]=false;}}}
+ public static void acknowledge(boolean accepted){try(var ownership=NativeInputOwnership.open()){if(pending!=null){int side=pending.side();if(accepted&&NativeActionAuthority.current(pendingAuthority)){queued[side]=pending;queuedAuthority[side]=pendingAuthority;queuedTickets[side]=ticketFor(pending);queuedRetired[side]=false;}else{grabs.cancel(side);MoveableCarry.cancel();queued[side]=null;queuedAuthority[side]=null;queuedTickets[side]=0;queuedRetired[side]=true;}}pending=null;pendingAuthority=null;}}
+ private static boolean callbackAuthority(int side){if(!NativeInputOwnership.allows(side)||side<0||side>1)return false;if(pending!=null&&pending.side()==side&&NativeActionAuthority.current(pendingAuthority))return true;if(queued[side]!=null&&!NativeActionAuthority.current(queuedAuthority[side])||pending!=null&&pending.side()==side&&!NativeActionAuthority.current(pendingAuthority)){queued[side]=null;queuedAuthority[side]=null;queuedTickets[side]=0;queuedRetired[side]=true;grabs.cancel(side);}return !queuedRetired[side];}
+ /** Called before the original queued action validates or commits. Native ownership and quantities stay native. */
+ public static boolean actionAllowed(IsoPlayer p,int side,long generation){try(var ownership=NativeInputOwnership.open()){if(side<0||side>1||generation!=epoch||p!=actor||!eligible(p)||!callbackAuthority(side))return false;boolean fresh=pending!=null&&pending.side()==side;var request=fresh?pending:queued[side];var stamp=fresh?pendingAuthority:queuedAuthority[side];if(request==null||request.epoch()!=generation||!NativeActionAuthority.current(stamp))return false;var f=PzvrContacts.sample(System.nanoTime());return f!=null&&f.hand(side)!=null;}}
+ /** Queued closures bind this ticket so a retired callback cannot borrow permission from a newer request. */
+ public static boolean actionAllowedRequest(IsoPlayer p,int side,long generation,long ticket){try(var ownership=NativeInputOwnership.open()){if(ticket<=0||side<0||side>1)return false;boolean fresh=pending!=null&&pending.side()==side;long current=fresh?ticketFor(pending):queued[side]==null?0:queuedTickets[side];return current==ticket&&actionAllowed(p,side,generation);}}
+ public static boolean canReceive(IsoPlayer p,InventoryItem item,int side,long generation){try(var ownership=NativeInputOwnership.open()){var f=PzvrContacts.sample(System.nanoTime());return generation==epoch&&p==actor&&eligible(p)&&callbackAuthority(side)&&f!=null&&f.hand(side)!=null&&f.hand(side).grip()&&grabs.pending(side,item,System.nanoTime())&&hand(p,side)==null&&item.getContainer()==p.getInventory()&&item.getWorldItem()==null&&p.getInventory().contains(item);}}
+ public static void received(IsoPlayer p,InventoryItem item,int side,long generation){try(var ownership=NativeInputOwnership.open()){if(p==actor&&generation==epoch&&callbackAuthority(side)&&hand(p,side)==item&&item.getContainer()==p.getInventory()){if(grabs.confirm(side,item,System.nanoTime()))MoveableCarry.received(p,item,side,generation);NativeItemPlacement.clear(item);resting.remove(item);savedAt.remove(item);if(loose.remove(item)!=null&&physics!=null)physics.remove(item);simulatedPacks.remove(item);queued[side]=null;queuedAuthority[side]=null;}}}
+ public static void dropped(IsoPlayer p,InventoryItem item,int side,long generation,double vx,double vy,double vh){try(var ownership=NativeInputOwnership.open()){
   dropped(p,item,side,generation,vx,vy,vh,0,0,0,1);
- }
- public static void dropped(IsoPlayer p,InventoryItem item,int side,long generation,double vx,double vy,double vh,float qx,float qy,float qz,float qw){
-  if(p!=actor||generation!=epoch||!enabled||item.getContainer()!=null||item.getWorldItem()==null)return;
+ }}
+ public static void dropped(IsoPlayer p,InventoryItem item,int side,long generation,double vx,double vy,double vh,float qx,float qy,float qz,float qw){try(var ownership=NativeInputOwnership.open()){
+  if(p!=actor||generation!=epoch||!enabled||!callbackAuthority(side)||item.getContainer()!=null||item.getWorldItem()==null)return;
   var object=item.getWorldItem();if(object.getSquare()==null||!object.getSquare().getWorldObjects().contains(object))return;
   var capturedDrop=MoveableModels.packOnly(item)?MoveableCarry.dropped(p,item,side,generation):null;
   if(!MoveableModels.canSimulate(item)){if(loose.remove(item)!=null&&physics!=null)physics.remove(item);simulatedPacks.remove(item);grabs.released(side,item);resting.remove(item);savedAt.remove(item);NativeItemPlacement.clear(item);if(capturedDrop!=null)MoveableDropBootstrap.stage(p,item,object,capturedDrop,new float[]{(float)vx,(float)vy,(float)vh},generation);status="Native moveable dropped; pack-only models require full-pose rendering for physics";return;}
@@ -149,10 +166,10 @@ public final class NativeItems {
   else{float half=.04f;shape=CollisionShape.box(half,half,half,0,0,half);pose=new float[]{object.getWorldPosX(),object.getWorldPosY(),(float)(object.getWorldPosZ()*STOREY),qx,qy,qz,qw};}
   if(MoveableModels.packOnly(item)){if(!physics.addPrepared(item,shape,pose,Math.clamp(item.getActualWeight(),.01f,20))){var geometry=MoveableRenderHook.geometry(item);if(geometry!=null)MoveableDropBootstrap.stage(p,item,object,new MoveableCarry.Drop(geometry,pose),new float[]{(float)vx,(float)vy,(float)vh},generation);status="Native moveable drop waiting for exact mesh preparation";return;}}else physics.add(item,shape,pose,Math.clamp(item.getActualWeight(),.01f,50));
   physics.release(item,new float[]{(float)vx,(float)vy,(float)vh,0,0,0});loose.put(item,object);if(MoveableModels.packOnly(item))simulatedPacks.put(item,MoveableRenderHook.geometry(item));resting.wake(item);savedAt.remove(item);nextEnvironment=nextShapePoll=0;status="Native item dropped with gravity and available packed mesh contacts";
- }
- public static boolean stored(IsoPlayer p,InventoryItem item,int side,long generation,zombie.inventory.ItemContainer destination){
-  if(p==actor&&generation==epoch&&enabled&&item.getContainer()==destination&&destination.contains(item)&&item.getWorldItem()==null){grabs.released(side,item);resting.remove(item);savedAt.remove(item);if(loose.remove(item)!=null&&physics!=null)physics.remove(item);simulatedPacks.remove(item);status="Original item returned to native storage";return true;}return false;
- }
+ }}
+ public static boolean stored(IsoPlayer p,InventoryItem item,int side,long generation,zombie.inventory.ItemContainer destination){try(var ownership=NativeInputOwnership.open()){
+  if(p==actor&&generation==epoch&&enabled&&callbackAuthority(side)&&item.getContainer()==destination&&destination.contains(item)&&item.getWorldItem()==null){grabs.released(side,item);resting.remove(item);savedAt.remove(item);if(loose.remove(item)!=null&&physics!=null)physics.remove(item);simulatedPacks.remove(item);queued[side]=null;queuedAuthority[side]=null;status="Original item returned to native storage";return true;}return false;
+ }}
  private static void savedNearby(IsoPlayer p,long now){
   if(now<nextSavedScan)return;nextSavedScan=now+500_000_000L;var poses=new IdentityHashMap<InventoryItem,float[]>();int examined=0;
   outer:for(int radius=0;radius<=3;radius++)for(int dx=-radius;dx<=radius;dx++)for(int dy=-radius;dy<=radius;dy++){

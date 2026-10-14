@@ -21,10 +21,10 @@ public final class FingerPoseDriver {
  private static final ThreadLocal<History[]> histories=new ThreadLocal<>();
  private static final Scope INACTIVE=new Scope();
  static final class Scope {
-  final IsoGameCharacter actor;final XrBackend.Frame input;final Thread thread;final long epoch;boolean valid;
+  final IsoGameCharacter actor;final XrBackend.Frame input;final Thread thread;final long epoch;final NativeInputOwnership.Snapshot ownership;boolean valid;
   SkinningData skin;Matrix4f[] source,output;
-  Scope(){actor=null;input=null;thread=null;epoch=-1;valid=false;}
-  Scope(IsoGameCharacter actor,XrBackend.Frame input,long epoch){this.actor=actor;this.input=input;this.epoch=epoch;thread=Thread.currentThread();valid=true;}
+  Scope(){actor=null;input=null;thread=null;epoch=-1;ownership=null;valid=false;}
+  Scope(IsoGameCharacter actor,XrBackend.Frame input,long epoch){this.actor=actor;this.input=input;this.epoch=epoch;ownership=NativeInputOwnership.read();thread=Thread.currentThread();valid=true;}
  }
  private static final class History {
   WeakReference<IsoGameCharacter> actor;WeakReference<SkinningData> skin;long epoch,generation;int layout;ControllerTouch.Contact contact;
@@ -44,7 +44,7 @@ public final class FingerPoseDriver {
  }
  private static Scope current(){var stack=scopes.get();return stack==null?null:stack.peek();}
  private static boolean free(Scope s,int side){
-  var config=mode;if(!config.enabled()||s==null||!s.valid||s.epoch!=config.epoch()||s.thread!=Thread.currentThread()||s.input==null||s.input!=Engine.latestInput||!Engine.active()||!Engine.worldPresent||!s.input.focused()||s.actor==null||s.actor!=IsoPlayer.getInstance()||s.actor.isDead()||VrControls.supportedPistol!=null)return false;
+  var config=mode;if(!config.enabled()||s==null||!s.valid||s.epoch!=config.epoch()||s.thread!=Thread.currentThread()||s.input==null||s.input!=Engine.latestInput||s.ownership==null||!s.ownership.allows(side)||!Engine.active()||!Engine.worldPresent||!s.input.focused()||s.actor==null||s.actor!=IsoPlayer.getInstance()||s.actor.isDead()||VrControls.supportedPistol!=null)return false;
   if((side==0?s.actor.getSecondaryHandItem():s.actor.getPrimaryHandItem())!=null)return false;
   var actions=s.actor.getCharacterActions();if(actions==null)return false;if(!actions.isEmpty()){var action=actions.get(0);if(action==null||action.overrideHandModels)return false;}
   return true;

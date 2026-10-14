@@ -5,7 +5,7 @@ The preview targets Windows x64, Project Zomboid 42.21.0 and the game's bundled 
 | Dependency | Accepted version | Provider |
 |---|---|---|
 | Project Zomboid | 42.21.0 | Your Steam installation |
-| PZVR | 0.1.1 | [PZVR](https://steamcommunity.com/sharedfiles/filedetails/?id=3816830877) |
+| PZVR | 0.1.2 | [PZVR](https://steamcommunity.com/sharedfiles/filedetails/?id=3816830877) |
 | Project Viewpoint | 0.1.6 | [Project Viewpoint](https://steamcommunity.com/sharedfiles/filedetails/?id=3809306528) |
 | ZombieBuddy | 2.3.4 | [Official release](https://github.com/zed-0xff/ZombieBuddy/releases/tag/v2.3.4) |
 | KK's Shelves | 0.4.6 | [KK's Shelves](https://steamcommunity.com/sharedfiles/filedetails/?id=3815931973) |

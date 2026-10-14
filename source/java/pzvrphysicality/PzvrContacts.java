@@ -11,6 +11,8 @@ public final class PzvrContacts {
  private static volatile Readback last=new Readback("not sampled",0,0,0,0);
  private static ContactFrame rejected(String why,long now,local.pzvr.XrBackend.Frame input,local.pzvr.RigContacts.Snapshot rig){last=new Readback(why,now,rig==null?0:rig.hostTime(),input==null?0:input.time(),0);return null;}
  public static String status(){var value=last;long now=System.nanoTime();return "Contacts "+value.reason()+"; hands="+value.hands()+" rigAgeMs="+age(now,value.rigTime())+" checkedAgeMs="+age(now,value.checked());}
+ /** Separate action permission. Sampling keeps native geometry and raw button telemetry unchanged. */
+ public static boolean allowsActions(int physicalSide){return NativeInputOwnership.allows(physicalSide);}
  private static String age(long now,long time){return time==0?"?":now<time?"future":Long.toString((now-time)/1_000_000L);}
  public static ContactFrame sample(long now){
   var frame=Engine.latestInput;var rig=RigContacts.latest;

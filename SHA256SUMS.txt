@@ -1,1 +1,1 @@
-d5c68925c60660479f7495b5666ceba8237c4fb3d4cfcdc6bbdb77ba2fc630b0  PZVRPhysicality-0.1.17-local.zip
+8d2667b4e7802bb60d877e370590722113e521d0a3ae0a9ac2203aa5c8e30ef0  PZVRPhysicality-0.1.18-local.zip
