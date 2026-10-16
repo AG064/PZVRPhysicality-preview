@@ -47,22 +47,24 @@ public final class NativeStorage {
   var player=IsoPlayer.players.length==0?null:IsoPlayer.players[0];var parent=container==null?null:container.getParent();var square=parent==null?null:parent.getSquare();
   return Main.ready()&&!zombie.network.GameServer.server&&player!=null&&!player.isDead()&&player.getVehicle()==null&&player.getSquare()!=null&&square!=null
    &&container.getContainingItem()==null&&container.isExplored()&&parent.getContainerIndex(container)>=0&&square.getObjects().contains(parent)
+   &&StorageProviders.selectionAllowed(parent)
    &&player.getCell()!=null&&player.getCell().getGridSquare(square.getX(),square.getY(),square.getZ())==square
    &&(square==player.getSquare()||square.isAdjacentTo(player.getSquare())&&player.getSquare().canReachTo(square))&&zombie.iso.areas.SafeHouse.isSafehouseAllowLoot(square,player);
  }
- public static void clear(){closeBodies();ShelfBridge.clear();selected=null;contacts=List.of();retry.clear();solved.clear();packed.clear();released.clear();geometryRetry.clear();fittingQueries=packingQueries=0;fitted=null;occlusion=null;fittedOwner=null;fittedModel=null;fittedMesh=null;plannedRows=null;plannedFrame=null;located=List.of();visible=List.of();nextPlan=0;status="Storage item models Off";}
+ public static void clear(){closeBodies();StorageProviders.clear();selected=null;contacts=List.of();retry.clear();solved.clear();packed.clear();released.clear();geometryRetry.clear();fittingQueries=packingQueries=0;fitted=null;occlusion=null;fittedOwner=null;fittedModel=null;fittedMesh=null;plannedRows=null;plannedFrame=null;located=List.of();visible=List.of();nextPlan=0;status="Storage item models Off";}
  public static void physicsConfigure(boolean enabled)throws Exception{if(enabled)RigidPhysics.loadDefault();if(physicsEnabled!=enabled){closeBodies();physicsEnabled=enabled;}}
  private static void saveBodies(){
   if(bodies==null||bodyContainer==null||bodyFrame==null||zombie.network.GameClient.client||zombie.network.GameServer.server||!eligible(bodyContainer)||bodyActor!=IsoPlayer.players[0])return;
+  if(StorageProviders.visible(bodyContainer.getParent())&&!StorageProviders.ready(bodyContainer.getParent()))return;
   var view=selected;if(view==null||view.container!=bodyContainer||!view.key.equals(bodyKey))return;
   for(var row:view.rows){var sample=bodies.sample(row.item);if(sample==null||row.item.getContainer()!=bodyContainer)continue;var norm=StoragePose.normalized(bodyFrame,sample.state());if(norm==null)continue;
    long revision=StorageStateSave.commit(row.item,bodyContainer,bodyKey,sample.revision(),norm);if(revision>0)bodies.revision(row.item,sample.revision(),revision);
   }
  }
  private static void closeBodies(){if(bodies!=null){try{saveBodies();}finally{bodies.close();bodies=null;}}bodyContainer=null;bodyActor=null;bodyFrame=null;bodyKey=null;residentPlan=null;nextSave=0;}
- private static void retireCapture(String reason){try{closeBodies();}finally{ShelfBridge.clear();contacts=List.of();packed.clear();fitted=null;occlusion=null;fittedOwner=null;fittedModel=null;fittedMesh=null;plannedRows=null;plannedFrame=null;located=List.of();visible=List.of();nextPlan=0;status=reason;}}
+ private static void retireCapture(String reason){try{closeBodies();}finally{StorageProviders.clear();contacts=List.of();packed.clear();fitted=null;occlusion=null;fittedOwner=null;fittedModel=null;fittedMesh=null;plannedRows=null;plannedFrame=null;located=List.of();visible=List.of();nextPlan=0;status=reason;}}
  private static void prepareBodies(Selection view,StorageFrame frame){
-  if(!physicsEnabled||zombie.network.GameClient.client||zombie.network.GameServer.server||ShelfBridge.supported(view.container.getParent())&&!ShelfBridge.ready(view.container.getParent())){closeBodies();return;}
+  if(!physicsEnabled||zombie.network.GameClient.client||zombie.network.GameServer.server||StorageProviders.supported(view.container.getParent())&&!StorageProviders.ready(view.container.getParent())){closeBodies();return;}
   if(bodies==null||bodyContainer!=view.container||!view.key.equals(bodyKey)||bodyActor!=view.actor){closeBodies();bodies=new StorageBodies<>();bodyContainer=view.container;bodyKey=view.key;bodyActor=view.actor;}
   if(bodyFrame!=frame){
    var values=new ArrayList<PhysicalWorld.Static>();var parent=MeshPlacement.place(fittedMesh,frame.cos(),frame.sin(),frame.scale());
@@ -74,7 +76,7 @@ public final class NativeStorage {
  }
  public static void physicsTick(){
   if(!physicsEnabled)return;var view=selected;long now=System.nanoTime();
-  if(view==null||view.actor!=IsoPlayer.players[0]||!eligible(view.container)||zombie.network.GameClient.client||zombie.network.GameServer.server||ShelfBridge.supported(view.container.getParent())&&!ShelfBridge.ready(view.container.getParent())){closeBodies();return;}
+  if(view==null||view.actor!=IsoPlayer.players[0]||!eligible(view.container)||zombie.network.GameClient.client||zombie.network.GameServer.server||StorageProviders.supported(view.container.getParent())&&!StorageProviders.ready(view.container.getParent())){closeBodies();return;}
   if(bodies==null)return;var keep=new ArrayList<InventoryItem>();for(var row:visible)if(row.item.getContainer()==view.container&&row.item.getWorldItem()==null)keep.add(row.item);
   if(residentPlan!=visible){saveBodies();residentPlan=visible;}bodies.retain(keep);
   if(!zombie.GameTime.isGamePaused()){
@@ -108,7 +110,7 @@ public final class NativeStorage {
     int revision=integer(row.rawget("rev"));if(revision<1||revision>2147483646)throw new IllegalArgumentException("Storage metadata revision");
     if(item.getWorldItem()==null)rows.add(new Row(item,slot,x,y,z,qx,qy,qz,qw,Boolean.TRUE.equals(row.rawget("auto")),Boolean.TRUE.equals(row.rawget("raw")),revision));
    }
-   var previous=selected;if(previous!=null&&previous.container!=container)ShelfBridge.clear();List<Row> retained=previous!=null&&previous.container==container&&previous.key.equals(key)&&previous.rows.equals(rows)?previous.rows:rows;
+   var previous=selected;if(previous!=null&&previous.container!=container)StorageProviders.clear();List<Row> retained=previous!=null&&previous.container==container&&previous.key.equals(key)&&previous.rows.equals(rows)?previous.rows:rows;
    if(previous==null||retained!=previous.rows){contacts=List.of();packed.clear();}
    selected=new Selection(container,key,retained,IsoPlayer.players[0],Thread.currentThread(),System.nanoTime());status="Storage models armed: "+rows.size()+" native items";
   }catch(IllegalArgumentException invalid){clear();status="Storage model data rejected: "+invalid.getMessage();}
@@ -122,16 +124,16 @@ public final class NativeStorage {
  private static Field field(Class<?> owner,String name)throws ReflectiveOperationException{var f=owner.getDeclaredField(name);f.setAccessible(true);return f;}
  private static StorageFrame frame(ItemContainer container){
   var owner=container.getParent();var square=owner.getSquare();if(owner.getSprite()==null||!ChunkCache.packsOn(square))return null;
-  var actual=ShelfBridge.binding(owner);var binding=actual==null?ModelPacks.bind(owner.getSprite()):actual.binding();if(binding==null)return null;int state=binding.model.state();if(state!=PackModel.READ&&state!=PackModel.RESIDENT)return null;
+  var actual=StorageProviders.binding(owner);var binding=actual==null?ModelPacks.bind(owner.getSprite()):actual.binding();if(binding==null)return null;int state=binding.model.state();if(state!=PackModel.READ&&state!=PackModel.RESIDENT)return null;
   var mesh=PackedModelGeometry.get(binding.model);if(mesh==null){MeshRecovery.request(binding.model);return null;}
   boolean turns=actual==null?PackBind.turns(owner.getSprite()):actual.turns();float c=turns?binding.cos:1,s=turns?binding.sin:0;
   float x=square.getX()+.5f+binding.x,y=square.getY()+.5f+binding.y,h=(float)(square.getZ()*Math.sqrt(6))+WorldMesher.rise(owner)+binding.z;
-  if(fittedOwner==owner&&fittedModel==binding.model&&fittedMesh==mesh&&fittedCos==c&&fittedSin==s&&fittedScale==binding.scale&&fittedX==x&&fittedY==y&&fittedH==h)return fitted;
+  float scale=binding.scale;var placement=StorageProviders.pose(owner);if(placement!=null){x=placement.x();y=placement.y();h=placement.height();c=placement.cos();s=placement.sin();scale=placement.scale();}if(fittedOwner==owner&&fittedModel==binding.model&&fittedMesh==mesh&&fittedCos==c&&fittedSin==s&&fittedScale==scale&&fittedX==x&&fittedY==y&&fittedH==h)return fitted;
   float[] v=mesh.vertices();float minX=Float.POSITIVE_INFINITY,maxX=Float.NEGATIVE_INFINITY,minD=minX,maxD=maxX,minH=minX,maxH=maxX;
   for(int n=0;n<v.length;n+=3){minX=Math.min(minX,v[n]);maxX=Math.max(maxX,v[n]);minD=Math.min(minD,v[n+2]);maxD=Math.max(maxD,v[n+2]);minH=Math.min(minH,v[n+1]);maxH=Math.max(maxH,v[n+1]);}
-  packed.clear();fitted=new StorageFrame(new ContactFrame.Point(x,y,h),c,s,binding.scale,minX,maxX,minD,maxD,minH,maxH);
+  packed.clear();fitted=new StorageFrame(new ContactFrame.Point(x,y,h),c,s,scale,minX,maxX,minD,maxD,minH,maxH);
   try{occlusion=new StorageOcclusion(v,mesh.faces());}catch(IllegalArgumentException unsupported){occlusion=null;}
-  fittedOwner=owner;fittedModel=binding.model;fittedMesh=mesh;fittedCos=c;fittedSin=s;fittedScale=binding.scale;fittedX=x;fittedY=y;fittedH=h;return fitted;
+  fittedOwner=owner;fittedModel=binding.model;fittedMesh=mesh;fittedCos=c;fittedSin=s;fittedScale=scale;fittedX=x;fittedY=y;fittedH=h;return fitted;
  }
  private static List<Row> nearest(Selection view,StorageFrame frame,Frame nativeFrame,long now){
   if(plannedRows!=view.rows||plannedFrame!=frame){plannedRows=view.rows;plannedFrame=frame;located=view.rows.stream().map(row->new Located(row,position(row,frame))).toList();nextPlan=0;}
@@ -205,7 +207,7 @@ public final class NativeStorage {
   if(frame==null||view.actor!=IsoPlayer.players[0]||now<view.time||now-view.time>1_500_000_000L||!eligible(view.container)){retireCapture("Storage model capture inactive");return;}
   int drawn=0,missing=0,oversized=0,records=0,automaticPlaced=0,noRoom=0,deferred=0;var live=new ArrayList<Contact>();int firstCapture=frame.scene.models.count();
   try{
-   var fitted=frame(view.container);if(fitted==null){retireCapture("Storage models waiting for original furniture geometry");return;}
+   StorageProviders.admit(view.container.getParent(),frame.scene);var fitted=frame(view.container);if(fitted==null){retireCapture("Storage models waiting for original furniture geometry");return;}
    prepareBodies(view,fitted);missingPhysics=0;
    var a=access();var square=view.container.getParent().getSquare();
    var planned=new ArrayList<>(nearest(view,fitted,frame,now));var states=new IdentityHashMap<InventoryItem,StorageBodies.Sample>();
@@ -214,7 +216,7 @@ public final class NativeStorage {
    var occupied=new ArrayList<StorageFrame.Bounds>();var packingBudget=new StoragePacking.Budget(StoragePacking.MAX_GEOMETRY_QUERIES);boolean fixedUnavailable=false;
    var plannedItems=Collections.newSetFromMap(new IdentityHashMap<InventoryItem,Boolean>());for(var row:planned)plannedItems.add(row.item);
    for(var row:view.rows)if(!plannedItems.contains(row.item)){var state=bodies==null?null:bodies.sample(row.item);if(!row.automatic||row.raw||state!=null&&state.revision()>=row.revision){fixedUnavailable=true;break;}}
-   boolean readyHousing=!ShelfBridge.supported(view.container.getParent())||ShelfBridge.ready(view.container.getParent());
+   boolean readyHousing=!StorageProviders.supported(view.container.getParent())||StorageProviders.ready(view.container.getParent());
    try(var lease=new StorageCaptureLease(a.flag,a.sink,frame.drawers)){
     for(var row:planned){
      boolean automatic=automatic(row,states);
@@ -253,14 +255,14 @@ public final class NativeStorage {
      finally{records+=Math.max(0,frame.scene.models.count()-first);}
     }
    }
-   var owner=view.container.getParent();boolean shelf=ShelfBridge.supported(owner);
-   if(shelf){ShelfBridge.request(owner,drawn>0);if(drawn>0&&!ShelfBridge.ready(owner)){discard(frame,firstCapture,a);closeBodies();contacts=List.of();status="Storage assets ready; waiting for native empty shelf housing";return;}}else ShelfBridge.request(owner,false);
+   var owner=view.container.getParent();boolean shelf=StorageProviders.supported(owner);
+   if(shelf){StorageProviders.request(owner,drawn>0);if(drawn>0&&!StorageProviders.ready(owner)){discard(frame,firstCapture,a);closeBodies();contacts=List.of();status="Storage assets ready; waiting for native empty shelf housing";return;}}else StorageProviders.request(owner,false);
    if(selected==view&&eligible(view.container)){contacts=List.copyOf(live);status="Storage: "+drawn+"/"+view.rows.size()+" native models nearby, "+missing+" unavailable, "+oversized+" do not fit; auto placed "+automaticPlaced+", no room "+noRoom+", deferred "+deferred+"; fitting queries "+fittingQueries+", packing queries "+packingQueries+(bodies==null?"":"; bodies "+bodies.count()+", pending "+bodies.pending()+", missing geometry "+missingPhysics);}else contacts=List.of();
    if(retry.size()>MAX_ITEMS)retry.clear();
   }catch(ReflectiveOperationException|RuntimeException|LinkageError error){retireCapture("Storage model capture unavailable");if(now-warning>5_000_000_000L){warning=now;System.err.println("[PZVR Storage] Native capture retained: "+error);}}
  }
  public static Contact nearest(ContactFrame.Point hand,long now){
-  if(fitted==null||occlusion==null||ShelfBridge.supported(fittedOwner)&&!ShelfBridge.ready(fittedOwner))return null;
+  if(fitted==null||occlusion==null||StorageProviders.supported(fittedOwner)&&!StorageProviders.ready(fittedOwner))return null;
   var candidates=new ArrayList<Contact>();
   for(var contact:contacts){if(now<contact.time||now-contact.time>=150_000_000L||contact.container.getParent()!=fittedOwner||!eligible(contact.container)||contact.item.getContainer()!=contact.container||contact.item.getWorldItem()!=null||!contact.container.contains(contact.item)||contact.bounds.distance(hand)>=.12)continue;candidates.add(contact);}
   candidates.sort(Comparator.comparingDouble(c->c.bounds.distance(hand)));
@@ -271,7 +273,7 @@ public final class NativeStorage {
   }return null;
  }
  public static Destination destination(WorldRigFrame.Hand hand,InventoryItem item,long now){
-  var view=selected;if(view==null||hand==null||item==null||fitted==null||occlusion==null||fittedOwner!=view.container.getParent()||now<view.time||now-view.time>1_500_000_000L||!eligible(view.container)||ShelfBridge.supported(fittedOwner)&&!ShelfBridge.ready(fittedOwner))return null;
+  var view=selected;if(view==null||hand==null||item==null||fitted==null||occlusion==null||fittedOwner!=view.container.getParent()||now<view.time||now-view.time>1_500_000_000L||!eligible(view.container)||StorageProviders.supported(fittedOwner)&&!StorageProviders.ready(fittedOwner))return null;
   float[] pose=StoragePose.hand(hand),local=StoragePose.normalized(fitted,pose);if(local==null||!occlusion.aperture(fitted,fitted.local(hand.grip())))return null;
   for(int n=0;n<3;n++)if(local[n]<0||local[n]>1)return null;
   var player=IsoPlayer.players[0];if(!view.container.hasRoomFor(player,item))return null;

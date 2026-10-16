@@ -1,12 +1,14 @@
 # PZVR Physicality preview
 
+> Experimental preview: this build may be unstable, broken or unplayable. Multiplayer support is planned. Physicality physical transactions remain guarded to single-player; headset appearance, performance and co-op/multiplayer compatibility require live testing.
+
 Single-player physical item, food, utensil, storage and body interactions for released PZVR and Project Viewpoint. The extension preserves native item identities, inventory ownership, quantities, recipes and original action completion. PZVR continues to own OpenXR, movement, menus, native hand grasps and melee; Viewpoint continues to own rendering.
 
 This is the standalone Physicality extension. Enable it alongside the original dependencies listed in [DEPENDENCIES.md](DEPENDENCIES.md). The earlier experimental ProjectViewpointVR runtime is a separate project and must not be enabled alongside this preview.
 
 ## Install and configure
 
-1. Install the matching game, ZombieBuddy, Viewpoint, PZVR and KK's Shelves from their original providers. Better Window supplies the optional calibrated window/curtain geometry.
+1. Install the matching game, ZombieBuddy, Viewpoint and PZVR from their original providers. KK's Shelves 0.4.7 is the default storage provider. Reviewed Visible Loot 1.1.1 is an optional alternative; Better Window and Curtains V2 supply optional captured window or native curtain geometry. See the exact payload requirements in DEPENDENCIES.md.
 2. Download the preview ZIP from Releases and compare its SHA-256 with SHA256SUMS.txt. Extract the PZVRPhysicality folder into your own Zomboid mods directory.
 3. Enable PZVRPhysicality in the test save's mod list. Approve its Java mod through ZombieBuddy and restart if requested.
 4. Start VR through the upstream PZVR controls. In Mod Options, choose PZVR Gameplay Presets, select Presentation and press Apply. Normal profiles start with the optional modes Off.
@@ -16,7 +18,13 @@ Presentation enables the supported physical features. Comfort increases body rea
 
 Open controls and live status on the PZVR Presentation page shows the native game guide with current mode, tracking/input guards, touch availability and geometry status. The separate presentation profile opens it once at world start. Ordinary profiles leave automatic guide, backpack preparation and indexed-model repair Off. The guide can always be reopened from Mod Options.
 
-The 0.1.18 candidate targets the exact PZVR 0.1.2 payload. Native grabs, consumed grips and physical bandaging retain per-hand action authority; a fresh neutral grip/trigger frame is required before an authored action can resume. Current native binding mirroring controls logical grip and trigger routes independently of aim preference. Actor, world, focus, pause, UI, timed-action and weapon guards remain active.
+The 0.1.19 preview targets the exact PZVR 0.1.2 payload. Native grabs, consumed grips and physical bandaging retain per-hand action authority; a fresh neutral grip/trigger frame is required before an authored action can resume. Current native binding mirroring controls logical grip and trigger routes independently of aim preference. Actor, world, focus, pause, UI, timed-action and weapon guards remain active.
+
+The reviewed base configuration keeps the original 25 selected mods and updates the audited Shelf, Surface, Light and True Weathers payloads. The separate providers configuration selects 27 mods by adding only ViewpointVisibleLoot and DGVCurtains. It enables Use reviewed Visible Loot storage geometry on PZVR storage model providers, and Use reviewed Curtains V2 rendered cloth on PZVR curtain model provider. These two options default Off in ordinary profiles. KK's exact Java owner is checked when present; an absent KK owner is permitted only with the separate per-container provider selection and current housing admission guards. Unknown present owners remain rejected.
+
+The enhanced29 selection adds [Viewpoint Precision FIX 0.3.0](https://steamcommunity.com/sharedfiles/filedetails/?id=3814074009) and [Project Viewpoint - 3D Doors, Gates & Garages 0.2.5](https://steamcommunity.com/sharedfiles/filedetails/?id=3818859807) after the existing packs and Door Fix. Base25 and providers27 remain supported choices. The isolated comparison and enhanced test selections preserve these distinct mod lists. Precision's native aim/pointer selection does not own tracked hand grabs. Door contact support must follow the actual returned native model, exact asset and current pose while opening, locks and damage retain native actions. Garage coverage is closed/overhead state geometry, without a smooth-lift claim. The canonical offline gate passed 9,910 checks across 471 production classes. Headset appearance, natural interaction and live gameplay still need the user-run checklist. Third-party code and art stay with their original providers.
+
+Visible Loot keeps original item identities and native inventory actions. Missing or stale housing blocks authored contents, and Off or stale retirement requests native stock restoration. Curtains V2 contacts come from the current winning native IsoCurtain model and final emitted pose. Decorative hospital cloth, tents and awnings gain no native curtain actions. Offline numeric and copied-method proofs do not establish actual headset appearance or gameplay.
 
 PZVR Presentation also offers native Sit on ground, Give and wear one test schoolbag, and idempotent demo supplies. Schoolbag setup adds one missing original bag and queues the native wear action only for an empty back slot; ownership and the worn slot are checked again at completion. A different worn backpack stays equipped. The separate presentation profile enables one startup attempt, while applying a preset never grants or equips items. Supplies retain existing native items and contents. Belts use the normal inventory wear action. These helpers require an idle living single-player actor outside a vehicle.
 
@@ -53,13 +61,15 @@ Collision and visual coverage follows the actual supplied model and geometry pro
 
 ## Verification and live acceptance
 
+The release's [companion status catalog](https://github.com/AG064/PZVRPhysicality-preview/releases/download/v0.1.19-preview/mod-status-catalog.json) and [CSV edition](https://github.com/AG064/PZVRPhysicality-preview/releases/download/v0.1.19-preview/mod-status-catalog.csv) distinguish audited payloads, metadata-only listings and unknown compatibility. A listing or available model is not a live gameplay certification.
+
 The release carries an allowlisted package, exact SDK/library pins, offline regression results and standalone graphics/solver evidence. PUBLIC-READBACK.json identifies the archive and classes without publishing local SDK paths, private assets, saves, logs or configuration. The live checklist establishes headset startup, actual controller behavior, visual quality, naturalness, performance and native gameplay parity.
 
 Physicality's physical actions target single-player. Their multiplayer guards remain enabled. Upstream PZVR multiplayer behavior is separate from this extension's physical transaction coverage.
 
 ## Source and attribution
 
-The authored Java/Lua source is under source. BuildPreview.ps1 recompiles against your own matching SDKs into a fresh temporary directory without launching or installing the game. TestPreview.ps1 runs the small pure policy subset. TestNativeHeld.ps1 includes the authored native-held fixture/typed-ABI gate using your matching SDKs and compiled production classes. TestInputOwnership.ps1 checks original input ordering through copied bytecode and executes the ownership, touch and finger policies against authored providers. These checks do not reproduce the private asset or whole release GPU gate. Personal modified builds need their own approval and verification.
+The authored Java/Lua source is under source. BuildPreview.ps1 recompiles against your own matching SDKs into a fresh temporary directory without launching or installing the game. TestPreview.ps1 runs the small pure policy subset. TestNativeHeld.ps1 includes the authored native-held fixture/typed-ABI gate using your matching SDKs and compiled production classes. TestInputOwnership.ps1 checks original input ordering through copied bytecode and executes the ownership, touch and finger policies against authored providers. TestBasileDoors.ps1 runs the 68 authored door-provider checks with matching SDKs and the separately installed original provider directory; its numeric fixtures are generated only in a fresh temporary directory. These checks do not reproduce the private asset or whole release GPU gate. Personal modified builds need their own approval and verification.
 
 Physicality source is MIT licensed. Rust dependency notices are included in the JAR and source distribution. Original game/Workshop SDKs, meshes, textures, decompiled implementations and upstream repository history are excluded. Credits: PZVR by axizt and GingasVR; Project Viewpoint by its authors; ZombieBuddy by zed-0xff; and the separately installed model/geometry providers linked in DEPENDENCIES.md.
 

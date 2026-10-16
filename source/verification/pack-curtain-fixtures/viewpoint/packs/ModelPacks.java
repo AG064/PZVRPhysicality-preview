@@ -1,0 +1,1 @@
+package viewpoint.packs; public final class ModelPacks {public static final java.util.Map<String,PackBind> bound=new java.util.HashMap<>();public static int generation; public static PackBind bind(zombie.iso.sprite.IsoSprite s){return s==null?null:bound.get(s.name);}public static int generation(){return generation;}}

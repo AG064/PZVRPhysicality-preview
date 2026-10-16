@@ -1,0 +1,1 @@
+package zombie.core.skinnedmodel.animation;public final class AnimationTrack{public float time;public boolean finished;public float getCurrentTimeValue(){return time;}public boolean isFinished(){return finished;}}

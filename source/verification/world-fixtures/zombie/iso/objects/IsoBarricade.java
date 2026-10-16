@@ -1,0 +1,1 @@
+package zombie.iso.objects;public class IsoBarricade extends zombie.iso.IsoObject{public boolean destroyed,metal,bar;public int planks=2;public IsoBarricade(zombie.iso.IsoGridSquare s){super(s);}public boolean isDestroyed(){return destroyed;}public boolean isMetal(){return metal;}public boolean isMetalBar(){return bar;}public int getNumPlanks(){return planks;}}

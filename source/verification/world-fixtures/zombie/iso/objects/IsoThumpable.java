@@ -1,0 +1,1 @@
+package zombie.iso.objects;public class IsoThumpable extends zombie.iso.IsoObject{public boolean open,destroyed,door=true;public IsoThumpable(zombie.iso.IsoGridSquare s){super(s);}public boolean IsOpen(){return open;}public boolean isDestroyed(){return destroyed;}public boolean isDoor(){return door;}}

@@ -1,0 +1,2 @@
+package viewpoint.render;
+public final class ChunkMeshData{public final int level;public final int[] runs;private java.nio.FloatBuffer verts;int plantBase;private boolean retired;public ChunkMeshData(int z,float[] rows,int[] runs,int base){level=z;verts=java.nio.FloatBuffer.wrap(rows);this.runs=runs;plantBase=base;}public void release(){verts=null;}public void retire(){retired=true;}public java.nio.FloatBuffer buffer(){return verts;}}

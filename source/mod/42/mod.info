@@ -1,10 +1,10 @@
 name=PZVR Physicality Preview
 id=PZVRPhysicality
 author=AG064
-modversion=0.1.18-local
+modversion=0.1.19-local
 versionMin=42.21.0
 versionMax=42.21.0
-require=\ZombieBuddy,\Viewpoint,\PZVR,\ProjectViewpointShelves
+require=\ZombieBuddy,\Viewpoint,\PZVR
 loadModAfter=PZVR
 javaJarFile=media/java/client/PZVRPhysicality.jar
 javaPkgName=pzvrphysicality

@@ -1,0 +1,2 @@
+package zombie.iso.sprite;public final class IsoSprite{public viewpoint.packs.PackBind binding;public boolean turns;public int id;public String name;public boolean solidfloor,solid,solidTrans;public final zombie.core.properties.PropertyContainer properties=new zombie.core.properties.PropertyContainer();public int getID(){return id;}public zombie.core.properties.PropertyContainer getProperties(){return properties;}}
+

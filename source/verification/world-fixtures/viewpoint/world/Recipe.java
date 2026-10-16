@@ -1,0 +1,2 @@
+package viewpoint.world;
+public final class Recipe{final int level;final java.util.ArrayList<Batch> batches=new java.util.ArrayList<>();public Recipe(int z){level=z;}public void add(int kind,int owner,TileMesh mesh){var batch=new Batch();var op=new Op();op.kind=kind;op.owner=owner;op.mesh=mesh;batch.ops.add(op);batches.add(batch);}public static final class Batch{final java.util.ArrayList<Op> ops=new java.util.ArrayList<>();}public static final class Op{int kind,owner;TileMesh mesh;}}

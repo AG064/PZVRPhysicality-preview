@@ -1,0 +1,1 @@
+package viewpoint.render;public final class PackModel{public static final int READ=2,RESIDENT=3;public final java.io.File obj;public PackModel(){this(null);}public PackModel(java.io.File source){obj=source;}public int phase=READ;public int state(){return phase;}}

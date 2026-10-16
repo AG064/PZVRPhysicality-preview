@@ -1,0 +1,15 @@
+{
+  "Schema": "physicality-reviewed-public-doc-projection-v1",
+  "Scope": "Generated top-level public README only",
+  "ReplacementCount": 5,
+  "CanonicalSourceSHA256": "9a79a934b5725c681175194440a019e9a5fbf8c727c412955fc79d6f8816b53e",
+  "ProjectedReadmeSHA256": "220edb5218cd32a117f28fea30d3b9227bd82df89912a850c74ba6c9f3bcef85",
+  "CanonicalEmbeddedPackageReadmeSHA256": "98433948a223e2fbc0c05be36057171b57b0e28f92d0fc73d8037e86f0858ac0",
+  "CanonicalArchiveSHA256": "8b2f747a1aed0910f2b88e4a69f6a79407fde51b80a79e4855ac633ba43b43ce",
+  "CanonicalJarSHA256": "385d9d7c92834aa48fba47cb265b5453526934ed6cb8aae568b284e9ba93b027",
+  "CanonicalPackageAndRuntimeUnchanged": true,
+  "SourceWorkspaceUnchanged": true,
+  "IndependentArtifactAcceptanceSHA256": "92c8cd4f4ef4274461f093d96d894009aaa43aff45be1583eae89f54f8728378",
+  "IndependentProjectionAcceptanceSHA256": "93acf06882d4932d6a8e181cc46a5e36570b459e178d50a5ff6b82e7a5bb528b",
+  "GameHeadsetMultiplayerNotClaimed": true
+}

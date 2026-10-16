@@ -1,0 +1,1 @@
+package basile.doors3d;public final class DoorModels{private static final java.util.Map<Object,Object> clones=new java.util.WeakHashMap<>();public static void bind(Object owner,Object model){clones.put(owner,model);}public static void clear(){clones.clear();}}

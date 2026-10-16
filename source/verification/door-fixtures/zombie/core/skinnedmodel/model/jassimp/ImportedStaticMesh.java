@@ -1,0 +1,1 @@
+package zombie.core.skinnedmodel.model.jassimp;public final class ImportedStaticMesh{zombie.core.skinnedmodel.model.VertexBufferObject.VertexArray verticesUnskinned;int[] elements;public ImportedStaticMesh(zombie.core.skinnedmodel.model.VertexBufferObject.VertexArray v,int[] e){verticesUnskinned=v;elements=e;}}

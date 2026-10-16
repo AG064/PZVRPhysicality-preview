@@ -1,0 +1,1 @@
+package viewpoint.packs; public final class PackBind {public final viewpoint.render.PackModel model;public final float x,y,z,cos,sin,scale;public PackBind(viewpoint.render.PackModel m,float x,float y,float z,float c,float s,float scale){model=m;this.x=x;this.y=y;this.z=z;cos=c;sin=s;this.scale=scale;}}

@@ -29,8 +29,8 @@ local instructions='<H2> Controls <TEXT> <LINE> '
     ..'PZVR World Visuals enables supported emitted counter-sink geometry and faucet feedback separately from physical tap actions. Check its current emitted-model and rendered receipt before judging alignment. Window sash motion uses measured supported pairs and matching progressed draw/contact; unknown pairs keep native behavior. Selected walls, doors and curtains retain their provider geometry; extra universal thickness is not added. <LINE> '
     ..'Sit and test backpack: the buttons request native single-player actions. A test schoolbag is added only when missing; another worn backpack is never replaced. Supplies are optional and idempotent. <LINE> '
 local fields={{'SDK','sdkStatus'},{'Native guide UI','guideUiStatus'},{'Modes','modesStatus'},{'Native hand slots','handStateStatus'},{'Interaction guards','interactionStatus'},{'Touch input','inputStatus'},
-    {'Fingers','fingersStatus'},{'Items','status'},{'Consumption','consumptionStatus'},{'Storage','storageStatus'},
-    {'Taps','tapsStatus'},{'Body','bodyStatus'},{'Backpack','backpackStatus'},{'Curtains','curtainsStatus'},
+    {'Fingers','fingersStatus'},{'Items','status'},{'Consumption','consumptionStatus'},{'Storage','storageStatus'},{'Storage provider','storageProvidersStatus'},
+    {'Taps','tapsStatus'},{'Body','bodyStatus'},{'Backpack','backpackStatus'},{'Curtains','curtainsStatus'},{'Curtain provider','packCurtainsStatus'},
     {'Crafting','craftingStatus'},{'Held contacts','contactsStatus'},{'World geometry','worldContactsStatus'},{'World visual feedback','worldVisualsStatus'},{'Indexed models','indexedModelsStatus'},{'Moveable models','moveableModelsStatus'},{'Native held fallback','nativeHeldStatus'},{'Window sash motion','windowMotionStatus'},{'Held model receipts','heldModelDiagnosticsStatus'},{'Player collision','playerCollisionStatus'},{'Recent grip attempts','gripAttemptsStatus'}}
 function Window:createChildren()
     ISCollapsableWindow.createChildren(self)

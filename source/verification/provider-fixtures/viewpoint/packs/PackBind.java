@@ -1,0 +1,2 @@
+package viewpoint.packs;
+public final class PackBind {public viewpoint.render.PackModel model;public float x,y,z,cos=1,sin,scale=1;public static boolean turns(zombie.iso.sprite.IsoSprite s){return true;}}

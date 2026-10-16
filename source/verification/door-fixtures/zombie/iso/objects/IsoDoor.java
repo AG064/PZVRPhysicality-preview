@@ -1,0 +1,2 @@
+package zombie.iso.objects;public class IsoDoor extends zombie.iso.IsoObject{public boolean open,destroyed;public int pair=-1;public zombie.iso.IsoObject partner;public static int getDoubleDoorIndex(zombie.iso.IsoObject o){return ((IsoDoor)o).pair;}public static zombie.iso.IsoObject getDoubleDoorObject(zombie.iso.IsoObject o,int i){return ((IsoDoor)o).partner;}public IsoDoor(zombie.iso.IsoGridSquare s){super(s);}public boolean IsOpen(){return open;}public boolean isDestroyed(){return destroyed;}}
+

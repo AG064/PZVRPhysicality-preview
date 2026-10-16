@@ -1,0 +1,2 @@
+package zombie.iso;
+public class IsoObject {public IsoGridSquare square;public zombie.iso.sprite.IsoSprite sprite,overlay;public float rise;public boolean removed;public java.util.ArrayList<zombie.iso.sprite.IsoSpriteInstance> attached;public IsoGridSquare getSquare(){return square;}public int getObjectIndex(){return removed?-1:0;}public zombie.iso.sprite.IsoSprite getSprite(){return sprite;}public zombie.iso.sprite.IsoSprite getOverlaySprite(){return overlay;}public java.util.ArrayList<zombie.iso.sprite.IsoSpriteInstance> getAttachedAnimSprite(){return attached;}}

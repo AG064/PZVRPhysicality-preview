@@ -1,0 +1,58 @@
+{
+  "Schema": "physicality-portable-verification-v1",
+  "Passed": true,
+  "CanonicalChecks": 9910,
+  "ProductionClasses": 471,
+  "RustNotices": 184,
+  "ClassBytesMatch": true,
+  "RustNoticeBytesMatch": true,
+  "DllLuaModInfoBytesMatch": true,
+  "CompleteJarResourcesIdentical": false,
+  "JarContainersIdentical": false,
+  "KnownJarMetadataDifferences": {
+    "Manifest": {
+      "CanonicalSHA256": "8854c15eeb2989c63829580ef5283e873b5931722314a614e9c0c9f783d4b99d",
+      "PersonalSourceBuildSHA256": "3d47899a0e37c09ebd761926b682acbac40d5b8d86506be5ef30d8645e298aa7",
+      "Difference": "Canonical implementation title/version versus JDK default Created-By manifest"
+    },
+    "ExtraMITLicense": {
+      "Path": "META-INF/LICENSE",
+      "SHA256": "4ff45fa2e1da73405486cee3e3b6720a8b8483ab5c511391319ce4cb21c4dd1e",
+      "MatchesExportedAuthoredMIT": true
+    }
+  },
+  "PinnedLoaderMetadataInspection": {
+    "OriginalMethodsExecuted": false,
+    "PhysicalitySourceUsesTheseManifestFields": false,
+    "PreloadField": "ZB-Preload absent in both",
+    "VersionReads": "ZombieBuddy own package/self-updater and PZVR Viewpoint diagnostics; no Physicality gate found in inspected pinned source/loader",
+    "Boundary": "Not a universal third-party or live-loader guarantee"
+  },
+  "Subsets": {
+    "Policy": {
+      "Passed": true,
+      "Checks": 115,
+      "CountedAgainInCanonical": false
+    },
+    "NativeHeld": {
+      "Passed": true,
+      "Checks": 199,
+      "CountedAgainInCanonical": false
+    },
+    "InputOwnership": {
+      "Passed": true,
+      "Checks": 284,
+      "CountedAgainInCanonical": false
+    },
+    "BasileDoors": {
+      "Passed": true,
+      "Checks": 68,
+      "CountedAgainInCanonical": false
+    }
+  },
+  "OriginalNamespaceLoads": 0,
+  "GameExecuted": false,
+  "HeadsetVerified": false,
+  "MultiplayerRuntimeVerified": false,
+  "PublicSDKArtPrivateFixturesLogsProfilesExcluded": true
+}

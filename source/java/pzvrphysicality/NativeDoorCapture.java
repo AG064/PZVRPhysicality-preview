@@ -9,9 +9,9 @@ public final class NativeDoorCapture {
  private record Clock(WeakReference<Object> source,float time,boolean finished){
   boolean matches(Clock now){return now!=null&&source.get()==now.source.get()&&time==now.time&&finished==now.finished;}
  }
- private record State(WeakReference<IsoGridSquare> square,WeakReference<Object> sprite,WeakReference<Object> model,WorldContactCapture.SquareState receipt,String name,String animation,String runtime,float time,int nativeState,float rise,Clock clock){
+ private record State(WeakReference<IsoGridSquare> square,WeakReference<Object> sprite,WeakReference<Object> model,WorldContactCapture.SquareState receipt,String name,String animation,String runtime,float time,int nativeState,float rise,Clock clock,BasileDoorCapture.Receipt provider){
   boolean matches(IsoObject owner)throws ReflectiveOperationException{
-   var now=state(owner,false);return now!=null&&square.get()==now.square.get()&&receipt.matches(owner.getSquare(),-1)&&sprite.get()==now.sprite.get()&&model.get()==now.model.get()&&Objects.equals(name,now.name)&&Objects.equals(animation,now.animation)&&Objects.equals(runtime,now.runtime)&&time==now.time&&nativeState==now.nativeState&&rise==now.rise&&(clock==null?now.clock==null:clock.matches(now.clock));
+   var now=state(owner,false,provider);return now!=null&&square.get()==now.square.get()&&receipt.matches(owner.getSquare(),-1)&&sprite.get()==now.sprite.get()&&model.get()==now.model.get()&&Objects.equals(name,now.name)&&Objects.equals(animation,now.animation)&&Objects.equals(runtime,now.runtime)&&time==now.time&&nativeState==now.nativeState&&rise==now.rise&&(clock==null?now.clock==null:clock.matches(now.clock));
   }
  }
  private static final class Range{
@@ -34,20 +34,22 @@ public final class NativeDoorCapture {
   for(Object value:list)if(value!=null&&animatedOwner.get(value)==source){if(found!=null)throw new IllegalArgumentException("Ambiguous native door animation");found=animatedTrack.get(value);}
   if(found==null)return null;float time=(Float)clockTime.invoke(found);if(!Float.isFinite(time)||time<0||time>3600)throw new IllegalArgumentException("Door animation time");return new Clock(new WeakReference<>(found),time,(Boolean)clockFinished.invoke(found));
  }
- private static State state(IsoObject owner,boolean receipt)throws ReflectiveOperationException{
+ private static State state(IsoObject owner,boolean receipt,BasileDoorCapture.Receipt provider)throws ReflectiveOperationException{
   int value;if(owner instanceof IsoDoor d){value=(d.IsOpen()?1:0)|(d.isDestroyed()?2:0);int pair=IsoDoor.getDoubleDoorIndex(owner);if((pair==1||pair==4)&&IsoDoor.getDoubleDoorObject(owner,pair==1?2:3)==null)return null;}else if(owner instanceof IsoThumpable t&&t.isDoor())value=(t.IsOpen()?1:0)|(t.isDestroyed()?2:0);else return null;
   if(cachedModel==null){cachedModel=field(IsoObject.class,"spriteModel");modelSprite=field(IsoObject.class,"spriteModelInit");}
-  var square=owner.getSquare();var sprite=owner.getSprite();var model=(zombie.iso.SpriteModel)cachedModel.get(owner);if((value&2)!=0||square==null||sprite==null||model==null||modelSprite.get(owner)!=sprite||owner.getObjectIndex()<0)return null;
+  var square=owner.getSquare();var sprite=owner.getSprite();var model=provider==null?(zombie.iso.SpriteModel)cachedModel.get(owner):provider.model.get();if((value&2)!=0||square==null||sprite==null||model==null||owner.getObjectIndex()<0)return null;
+  if(provider==null){if(modelSprite.get(owner)!=sprite||DoorMeshCpu.basileReady()&&!BasileDoorCapture.nativeOwner(owner))return null;}else if(!provider.current(owner))return null;
   float time=model.getAnimationTime(),rise=viewpoint.world.WorldMesher.rise(owner);if(!Float.isFinite(time)||!Float.isFinite(rise)||Math.abs(rise)>1)throw new IllegalArgumentException("Door native state");
   for(String text:List.of(Objects.toString(model.getModelScriptName(),""),Objects.toString(model.getAnimationName(),""),Objects.toString(model.getRuntimeString(),"")))if(text.length()>256)throw new IllegalArgumentException("Door model metadata budget");
-  return new State(new WeakReference<>(square),new WeakReference<>(sprite),new WeakReference<>(model),receipt?WorldContactCapture.snapshot(square):null,model.getModelScriptName(),model.getAnimationName(),model.getRuntimeString(),time,value,rise,clock(owner));
+  return new State(new WeakReference<>(square),new WeakReference<>(sprite),new WeakReference<>(model),receipt?WorldContactCapture.snapshot(square):null,model.getModelScriptName(),model.getAnimationName(),model.getRuntimeString(),time,value,rise,clock(owner),provider);
  }
  /** Balanced disabled scopes prevent a nested original drawer from borrowing its caller's owner. */
- public static void begin(Frame frame,IsoObject owner){
+ public static void begin(Frame frame,IsoObject owner){begin(frame,owner,-1);}
+ public static void begin(Frame frame,IsoObject owner,int firstDrawer){
   var stack=ranges.get();if(overflow.get()>0||stack.size()>=8){for(var outer:stack)if(outer!=OFF)outer.tainted=true;overflow.set(overflow.get()+1);return;}Range value=OFF;
   if(frame!=null&&stack.stream().anyMatch(outer->outer.owner!=null&&outer.frame==frame))value=new Range(frame,null,null,frame.scene.models.count(),WorldContactCapture.epoch());
   if(Main.ready()&&WorldContactCapture.enabled()&&WorldContactCapture.ownerThread()&&frame!=null&&owner!=null)try{
-   var p=player();if(WorldContactCapture.eligible(p)){WorldContactCapture.scope(p);scope();var state=state(owner,true);var square=owner.getSquare();if(state!=null&&square.getCell()==p.getCell()&&Math.abs(square.getX()-p.getX())<=3&&Math.abs(square.getY()-p.getY())<=3&&square.getZ()==(int)Math.floor(p.getZ()))value=new Range(frame,owner,state,frame.scene.models.count(),epoch);}
+   var p=player();if(WorldContactCapture.eligible(p)){WorldContactCapture.scope(p);scope();var provider=firstDrawer>=0&&DoorMeshCpu.basileReady()?BasileDoorCapture.read(frame,firstDrawer,owner):null;var state=provider==null&&firstDrawer>=0&&DoorMeshCpu.basileReady()&&!BasileDoorCapture.nativeDrawer(frame,firstDrawer,owner)?null:state(owner,true,provider);if(state==null)cache.remove(owner);var square=owner.getSquare();if(state!=null&&square.getCell()==p.getCell()&&Math.abs(square.getX()-p.getX())<=3&&Math.abs(square.getY()-p.getY())<=3&&square.getZ()==(int)Math.floor(p.getZ()))value=new Range(frame,owner,state,frame.scene.models.count(),epoch);}
   }catch(ReflectiveOperationException|RuntimeException|LinkageError invalid){missing++;}stack.push(value);
  }
  public static void end(Frame frame,IsoObject owner,boolean completed){
@@ -63,9 +65,9 @@ public final class NativeDoorCapture {
    var square=owner.getSquare();var anchor=RigidPhysics.pose(square.getX()+.5f,square.getY()+.5f,(float)(square.getZ()*Math.sqrt(6))+r.state.rise);var parts=new ArrayList<Part>();var shapes=new ArrayList<CollisionShape>();int vertexCount=0,indexCount=0;
    for(int n=r.first;n<last;n++){
     boolean excluded=false;for(var span:r.excluded)if(n>=span[0]&&n<span[1]){excluded=true;break;}if(excluded)continue;
-    var mesh=sources[n];if(mesh==null)throw new IllegalArgumentException("Door native mesh unavailable");var data=DoorMeshCpu.get(mesh);var rigid=data==null&&mesh.skinningData==null?ItemMeshCpu.get(mesh):null;
+    var mesh=sources[n];if(r.state.provider!=null&&!r.state.provider.mesh(mesh))throw new IllegalArgumentException("Basile final mesh owner");if(mesh==null)throw new IllegalArgumentException("Door native mesh unavailable");var data=DoorMeshCpu.get(mesh);var rigid=data==null&&mesh.skinningData==null?ItemMeshCpu.get(mesh):null;
     if(data==null&&rigid==null)throw new IllegalArgumentException("Door original CPU mesh unavailable");
-    float[] points;if(data!=null){points=DoorMeshCpu.skin(data,poses,indices[n],count);if(indices[n]>=0&&data.weighted()&&r.state.clock==null)throw new IllegalArgumentException("Door native animation receipt unavailable");}else points=rigid.vertices();
+    float[] points;if(data!=null){points=DoorMeshCpu.skin(data,poses,indices[n],count);if(indices[n]>=0&&data.weighted()&&r.state.clock==null&&(r.state.provider==null||!r.state.provider.explicitPose))throw new IllegalArgumentException("Door native animation receipt unavailable");}else points=rigid.vertices();
     int[] faces=data==null?rigid.faces():data.faces();if((vertexCount+=points.length/3)>8000||(indexCount+=faces.length)>48000)throw new IllegalArgumentException("Door combined geometry budget");
     shapes.add(ItemMesh.fromRendered(points,faces,Arrays.copyOfRange(rows,n*68,n*68+16),frame.camX,frame.camY,frame.camZ,anchor));parts.add(new Part(new WeakReference<>(mesh),data,rigid));
    }

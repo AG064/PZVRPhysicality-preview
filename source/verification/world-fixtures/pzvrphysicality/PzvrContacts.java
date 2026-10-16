@@ -1,0 +1,1 @@
+package pzvrphysicality;public final class PzvrContacts{public static ContactFrame frame;public static Runnable reading;public static ContactFrame sample(long now){if(reading!=null)reading.run();return frame;}}

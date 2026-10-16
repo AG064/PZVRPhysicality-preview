@@ -1,0 +1,1 @@
+package zombie.core.textures;public final class TextureDraw{public static abstract class GenericDrawer{public abstract void render();public abstract void postRender();}}

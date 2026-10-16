@@ -1,0 +1,2 @@
+package zombie.characters;
+public final class IsoPlayer {public static IsoPlayer[] players=new IsoPlayer[1];public boolean dead;public zombie.vehicles.BaseVehicle vehicle;public zombie.iso.IsoCell cell;public zombie.iso.IsoGridSquare square;public boolean isDead(){return dead;}public zombie.vehicles.BaseVehicle getVehicle(){return vehicle;}public zombie.iso.IsoCell getCell(){return cell;}public zombie.iso.IsoGridSquare getSquare(){return square;}}

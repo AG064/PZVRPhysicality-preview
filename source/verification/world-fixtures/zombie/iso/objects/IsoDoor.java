@@ -1,0 +1,1 @@
+package zombie.iso.objects;public class IsoDoor extends zombie.iso.IsoObject{public boolean open,destroyed;public IsoDoor(zombie.iso.IsoGridSquare s){super(s);}public boolean IsOpen(){return open;}public boolean isDestroyed(){return destroyed;}}

@@ -1,6 +1,7 @@
 require 'TimedActions/ISTimedActionQueue'
 require 'TimedActions/ISOpenCloseCurtain'
 require 'PZAPI/ModOptions'
+require 'PZVRPhysicalityProviders'
 
 local function tick()
     local api=PZVRPhysicality
@@ -63,7 +64,12 @@ end
 local page=PZAPI.ModOptions:create('PZVRPhysicalityCurtains','PZVR Physical Curtains')
 local enabled=page:addTickBox('enabled','Physical curtain grip',false,
     'Single-player: release the grip, touch a visible vertical cloth edge with an empty hand, then grip and slide sideways about 10 cm. Uses the original open/close action and current 3D cloth geometry. Closed glass and window frames block reach. Missing geometry keeps native controls available. Curtain cloth is not simulated.')
-local function apply() if PZVRPhysicality then print('[PZVR Curtains] '..PZVRPhysicality.curtainsConfigure(enabled:getValue())) end end
+local function apply()
+    if PZVRPhysicality then
+        if PZVRPhysicalityProviderOptions then PZVRPhysicalityProviderOptions.prepareCurtains() end
+        print('[PZVR Curtains] '..PZVRPhysicality.curtainsConfigure(enabled:getValue()))
+    end
+end
 function page:apply() apply() end
 Events.OnTick.Add(tick)
 Events.OnGameStart.Add(apply)

@@ -16,7 +16,10 @@ public final class DoorMeshCpu {
   int bytes(){return (positions.length+faces.length+weights.length+joints.length)*4;}
   public boolean weighted(){for(float w:weights)if(w>0)return true;return false;}
  }
- private static final WeakHashMap<ModelMesh,Data> cache=new WeakHashMap<>();private static long captured,rejected;
+ private static final WeakHashMap<ModelMesh,Data> cache=new WeakHashMap<>();
+ private static final WeakHashMap<ModelMesh,BasileDoorAssets.Receipt> basile=new WeakHashMap<>();private static volatile boolean basileSeen;private static long captured,rejected;
+ public static boolean basileReady(){return basileSeen;}
+ private static boolean basilePath(String path){return path!=null&&(path.startsWith("BasileDoors3D/")||path.startsWith("media/models_X/BasileDoors3D/"));}
  public static boolean allowed(String path){
   if(path==null||path.length()>512||path.indexOf('\0')>=0)return false;String p=path.replace('\\','/').toLowerCase(Locale.ROOT);if(p.contains("..")||p.contains(":")||p.contains("?")||p.contains("#"))return false;
   int at=p.indexOf("isoobject/");if(at<0||at>0&&p.charAt(at-1)!='/')return false;String name=p.substring(at+10);if(name.contains("/"))return false;
@@ -24,9 +27,11 @@ public final class DoorMeshCpu {
  }
  private static Object read(Object source,String name)throws ReflectiveOperationException{var f=source.getClass().getDeclaredField(name);f.setAccessible(true);return f.get(source);}
  public static void capture(Object processed,ModelMesh mesh){
-  if(!Main.ready()||mesh==null)return; synchronized(DoorMeshCpu.class){cache.remove(mesh);}
+  if(!Main.ready()||mesh==null)return; synchronized(DoorMeshCpu.class){cache.remove(mesh);basile.remove(mesh);}
   try{
-   if(!allowed(mesh.getPath().getPath())||processed==null||!processed.getClass().getName().equals("zombie.core.skinnedmodel.model.jassimp.ProcessedAiScene"))return;
+   String path=mesh.getPath().getPath();boolean nativePath=allowed(path);BasileDoorAssets.Receipt proof=null;
+   if(!nativePath){if(!basilePath(path))return;basileSeen=true;proof=BasileDoorAssets.capture(path);if(proof==null)return;}
+   if(processed==null||!processed.getClass().getName().equals("zombie.core.skinnedmodel.model.jassimp.ProcessedAiScene"))return;
    Object source=read(processed,"skinnedMesh");if(source==null){var statics=(List<?>)read(processed,"staticMeshes");if(statics.size()!=1)return;source=statics.getFirst();}
    boolean skin=source.getClass().getName().equals("zombie.core.skinnedmodel.model.jassimp.ImportedSkinnedMesh");if(!skin&&!source.getClass().getName().equals("zombie.core.skinnedmodel.model.jassimp.ImportedStaticMesh"))return;
    var array=(VertexBufferObject.VertexArray)read(source,skin?"vertices":"verticesUnskinned");var faces=(int[])read(source,"elements");if(array==null||array.numVertices<4||array.numVertices>8000)throw new IllegalArgumentException("Door CPU source extent");
@@ -34,12 +39,15 @@ public final class DoorMeshCpu {
    if(p<0||format.getElement(p).byteSize!=12||skin&&(w<0||j<0||format.getElement(w).byteSize!=16||format.getElement(j).byteSize!=16))throw new IllegalArgumentException("Door CPU vertex layout");
    float[] positions=new float[array.numVertices*3],weights=new float[array.numVertices*4];int[] joints=new int[weights.length];
    for(int v=0;v<array.numVertices;v++){for(int c=0;c<3;c++)positions[v*3+c]=array.getElementFloat(v,p,c);if(skin)for(int c=0;c<4;c++){weights[v*4+c]=array.getElementFloat(v,w,c);float bone=array.getElementFloat(v,j,c);if(!Float.isFinite(bone)||bone!=Math.rint(bone))throw new IllegalArgumentException("Door CPU bone index");joints[v*4+c]=(int)bone;}}
-   offer(mesh,new Data(positions,faces,weights,joints));
+   store(mesh,new Data(positions,faces,weights,joints),proof);
   }catch(ReflectiveOperationException|RuntimeException|LinkageError invalid){synchronized(DoorMeshCpu.class){rejected++;}}
  }
- public static synchronized void offer(ModelMesh mesh,Data data){Objects.requireNonNull(mesh);Objects.requireNonNull(data);int bytes=cache.values().stream().mapToInt(Data::bytes).sum();var old=cache.get(mesh);if(old!=null)bytes-=old.bytes();if(cache.size()>=64&&!cache.containsKey(mesh)||bytes+data.bytes()>8*1024*1024)cache.clear();cache.put(mesh,data);captured++;}
- public static synchronized Data get(ModelMesh mesh){return cache.get(mesh);}
- public static synchronized void clear(){cache.clear();captured=rejected=0;}
+ public static synchronized void offer(ModelMesh mesh,Data data){store(mesh,data,null);}
+ private static synchronized void store(ModelMesh mesh,Data data,BasileDoorAssets.Receipt proof){
+  Objects.requireNonNull(mesh);Objects.requireNonNull(data);if(proof!=null&&!proof.current())return;int bytes=cache.values().stream().mapToInt(Data::bytes).sum();var old=cache.get(mesh);if(old!=null)bytes-=old.bytes();if(cache.size()>=64&&!cache.containsKey(mesh)||bytes+data.bytes()>8*1024*1024){cache.clear();basile.clear();}cache.put(mesh,data);if(proof==null)basile.remove(mesh);else basile.put(mesh,proof);captured++;
+ }
+ public static synchronized Data get(ModelMesh mesh){var proof=basile.get(mesh);if(proof!=null&&(!proof.current()||!Objects.equals(proof.key,BasileDoorAssets.key(mesh.getPath().getPath())))||proof==null&&mesh!=null&&basilePath(mesh.getPath().getPath())){cache.remove(mesh);basile.remove(mesh);return null;}if(proof!=null&&!mesh.isReady())return null;return cache.get(mesh);}
+ public static synchronized void clear(){cache.clear();basile.clear();basileSeen=false;captured=rejected=0;}
  /** Same weighted vec4 rows as the pinned model.vert; never normalizes the original weights. */
  public static float[] skin(Data data,float[] palette,int start){
   Objects.requireNonNull(data);var positions=data.positions();if(start<0||!data.weighted())return positions;if(palette==null||start>palette.length/12||palette.length%12!=0||palette.length>4096*12)throw new IllegalArgumentException("Door palette extent");

@@ -1,0 +1,1 @@
+package zombie.iso;public final class SpriteModel{public String name="native-door",animation="DoorOpen",runtime="door_n_sw";public float time;public String getModelScriptName(){return name;}public String getAnimationName(){return animation;}public String getRuntimeString(){return runtime;}public float getAnimationTime(){return time;}}

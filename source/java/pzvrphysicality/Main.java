@@ -10,6 +10,12 @@ public final class Main {
  public static void main(String[] args){try{SdkPins.verifyRuntime();ready=true;System.out.println("[PZVR Physicality] SDK owners verified; extension is Off by default");}catch(Exception|LinkageError error){failure=error.toString();System.err.println("[PZVR Physicality] Unavailable: "+failure);}}
  public static boolean ready(){return ready;}
  public static String sdkStatus(){return ready?"SDK owners verified":"Unavailable: "+failure;}
+ public static String storageProvidersConfigure(boolean enabled){try{if(enabled&&!ready)return "Unavailable: "+failure;StorageProviders.configure(enabled);return storageProvidersStatus();}catch(RuntimeException|LinkageError error){configurationErrors.incrementAndGet();return "Storage providers unavailable: "+error;}}
+ public static boolean storageProvidersEnabled(){try{return ready&&StorageProviders.enabled();}catch(RuntimeException|LinkageError unavailable){return false;}}
+ public static String storageProvidersStatus(){try{return ready?StorageProviders.status():"Unavailable: "+failure;}catch(RuntimeException|LinkageError unavailable){return "Storage providers unavailable";}}
+ public static String packCurtainsConfigure(boolean enabled){try{if(enabled&&!ready)return "Unavailable: "+failure;PackCurtainCapture.configure(enabled);return packCurtainsStatus();}catch(RuntimeException|LinkageError error){configurationErrors.incrementAndGet();return "Pack curtain capture unavailable: "+error;}}
+ public static boolean packCurtainsEnabled(){try{return ready&&PackCurtainCapture.enabled();}catch(RuntimeException|LinkageError unavailable){return false;}}
+ public static String packCurtainsStatus(){try{return ready?PackCurtainCapture.status():"Unavailable: "+failure;}catch(RuntimeException|LinkageError unavailable){return "Pack curtain capture unavailable";}}
  public static boolean guideShowHud(){return GuideUiRoute.show(ready);}public static boolean guideReturnToGame(){return GuideUiRoute.returnToGame(ready);}public static String guideUiStatus(){return GuideUiRoute.status(ready)+"; "+GuideUiRoute.controls(ready);}
  public static String interactionStatus(){return NativeItems.guardStatus()+"; "+PzvrContacts.status()+"; "+WorldRigCapture.status();}
  public static String inputStatus(){return ControllerTouch.status();}

@@ -1,0 +1,1 @@
+package pzvrphysicality;public final class SdkPins{public static final String VIEWPOINT="afa5829d16b3785b0e62673376da6d2fb4c16b0ba3966d9d4a4ea064f584edc8";public static int checks;public static boolean accepted=true;public static void verify(Class<?> owner,String hash)throws Exception{checks++;if(!accepted)throw new IllegalStateException("Wrong provider");}}

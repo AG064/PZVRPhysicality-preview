@@ -1,0 +1,2 @@
+package zombie.iso;
+public final class IsoGridSquare{public final int x,y,z;public IsoChunk chunk;public final IsoCell cell;public final zombie.util.list.PZArrayList<IsoObject> objects=new zombie.util.list.PZArrayList<>();public IsoGridSquare(IsoCell c,int x,int y,int z){cell=c;this.x=x;this.y=y;this.z=z;c.squares.put(x+":"+y+":"+z,this);}public int getX(){return x;}public int getY(){return y;}public int getZ(){return z;}public IsoCell getCell(){return cell;}public IsoChunk getChunk(){return chunk;}public zombie.util.list.PZArrayList<IsoObject> getObjects(){return objects;}}

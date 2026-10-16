@@ -1,0 +1,1 @@
+package zombie.iso.SpriteDetails;public enum IsoFlagType{doorN,WindowN,windowN,attachedN,collideN,transparentN,WallNTrans,HoppableN,TallHoppableN,DoorWallN,WallN,doorW,WindowW,windowW,attachedW,collideW,transparentW,WallWTrans,HoppableW,TallHoppableW,DoorWallW,WallW,WallNW,attachedNW}

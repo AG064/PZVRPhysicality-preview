@@ -91,6 +91,8 @@ public final class FingerPoseIntegrationTest {
   arrays();before=values(output);enter();FingerCaptureAdvice.enter(new IsoPlayer());pose(0);check(same(output,before),"nested foreign capture does not borrow outer scope");FingerCaptureAdvice.exit();pose(0);FingerCaptureAdvice.exit();check(!same(output,before),"nested exit restores outer capture scope");
   arrays();before=values(output);enter();try{throw new IllegalStateException("authored original capture failure");}catch(IllegalStateException expected){}finally{FingerCaptureAdvice.exit();}pose(0);check(same(output,before),"failed capture exit restores empty scope");
   arrays();before=values(output);enter();Thread worker=new Thread(()->pose(0));worker.start();worker.join();FingerCaptureAdvice.exit();check(same(output,before),"other thread cannot mutate owned capture");
+  // The cross-thread negative is complete; this independent positive needs a current authored sample.
+  synchronized(context.lock){ControllerTouch.capture(context,null,900,new XrBackend.Hand[]{frame.left(),frame.right()},System.nanoTime());}Engine.latestInput=frame=ControllerTouchFixture.frame(System.nanoTime(),frame.left(),frame.right());
   arrays();before=values(output);FingerCaptureAdvice.enter(actor);try{pose(0);}finally{FingerCaptureAdvice.exit();}check(!same(output,before),"capture still supports native physical-crouch Off path without posture");
   unchanged("unknown rig root falls back",()->skin.boneIndices.remove("Bip01_L_Finger0"));skin.boneIndices.put("Bip01_L_Finger0",2);
   unchanged("cyclic hierarchy falls back",()->skin.skeletonHierarchy.set(4,4));skin.skeletonHierarchy.set(4,3);

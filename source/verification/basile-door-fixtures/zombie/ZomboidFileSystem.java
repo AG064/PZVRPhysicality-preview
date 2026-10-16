@@ -1,0 +1,1 @@
+package zombie;public final class ZomboidFileSystem{public static final ZomboidFileSystem instance=new ZomboidFileSystem();public static java.nio.file.Path root;public String getString(String key){return root.resolve(key.substring("media/models_X/BasileDoors3D/".length())).toString();}}

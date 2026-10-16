@@ -1,0 +1,1 @@
+package zombie.iso;public final class IsoCell{public final java.util.Map<String,IsoGridSquare> squares=new java.util.HashMap<>();public IsoGridSquare getGridSquare(int x,int y,int z){return squares.get(x+":"+y+":"+z);}}

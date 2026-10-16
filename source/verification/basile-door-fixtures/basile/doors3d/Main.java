@@ -1,0 +1,1 @@
+package basile.doors3d;public final class Main{public static void main(String[]args){throw new AssertionError("provider entrypoint forbidden");}}

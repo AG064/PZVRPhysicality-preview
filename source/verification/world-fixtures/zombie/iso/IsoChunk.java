@@ -1,0 +1,1 @@
+package zombie.iso;public final class IsoChunk{public int wx,wy;public final IsoCell cell;public IsoChunk(IsoCell c,int x,int y){cell=c;wx=x;wy=y;}public IsoGridSquare getGridSquare(int x,int y,int z){return cell.getGridSquare(wx*8+x,wy*8+y,z);}}

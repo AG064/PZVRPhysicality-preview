@@ -114,6 +114,19 @@ Record the preview version, game version, controller/runtime, GPU, refresh rate,
 - [ ] Return to the main menu, load another save and restart VR. Each mode initializes cleanly and no previous bag, item, world geometry or sensor record remains active.
 - [ ] Open a multiplayer session only to check the guard boundary. The preview's single-player physical actions stay disabled; ordinary upstream multiplayer controls remain available.
 
+## Updated providers and preserved saves
+
+- [ ] Record the exact selection: base25 comparison, providers27 with Visible Loot and Curtains V2, or enhanced29 with those providers plus Viewpoint Precision FIX 0.3.0 and Project Viewpoint - 3D Doors, Gates & Garages 0.2.5. The planned two-profile handoff uses base25 and enhanced29; providers27 remains a supported choice. No second renderer or Hands mod is enabled.
+- [ ] In enhanced29, aim between an adjacent cupboard and sink with Precision enabled. Native target/menu selection follows the aimed object while each physical hand grabs only its own actual contacted item. Changing aim must not steal a grip, replay an old transfer or change native action ownership.
+- [ ] Compare wood, metal and glass doors and paired gates in closed and open states. Record each door/gate style and location; contact matches the visible leaf and the open aperture stays clear. Test native opening/closing, locks and damage without duplicate actions or invisible packed barriers.
+- [ ] Test curtains beside supported doors and gates after changing the door state. Only the actual eligible native curtain may toggle; the frame, glass and decorative cloth must not borrow a curtain action or leave stale contacts.
+- [ ] Test garage doors in closed and overhead-open states. Current visible state meshes and supported contacts must agree, with a clear open aperture and no stale closed barrier. Continuous smooth lifting is not an acceptance claim for this candidate.
+- [ ] With Use reviewed Visible Loot storage geometry enabled, select a real reachable container through native loot, close the HUD, then pick up and return its real contents. Check the actual selected housing, item count and native transfer outcome.
+- [ ] Turn Visible Loot support Off, change its winning model, hide the housing and leave/reload the area. Native stock restores after recook; no duplicate contents or stale physical pickup remains.
+- [ ] With Use reviewed Curtains V2 rendered cloth enabled, pull each supported original native curtain and verify the drawn cloth, contact and one native toggle agree. Hospital cloth, tent flaps and decorative awnings must not gain curtain actions.
+- [ ] Compare the source and new profile's save progress, player databases, calibration and controller bindings. Only the explicitly recorded native mod-list additions may differ in copied save bytes; the played source remains unchanged.
+- [ ] Smoke-test updated Surface walls/windows/cache retirement, Light vehicle and handheld beams, and True Weathers rain/frost/lighting in both eyes. Record crashes, missing surfaces, incorrect window classification or changed lighting against the exact payload, without deleting publisher sidecars or bypassing native approval.
+
 ## Completion record
 
 Record PASS, FAIL or NOT APPLICABLE for every row, including the applicable model/controller coverage. A full parity result requires all applicable native outcomes, visuals, naturalness, interruptions and persistence checks to pass. A model that is not supplied by the selected providers cannot be counted as a successful 3D/collision test.

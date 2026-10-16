@@ -39,13 +39,14 @@ public final class FurnitureContacts {
   CounterTapBindings.contacts(this,true);
   var windowContacts=windows();var result=new ArrayList<PhysicalWorld.Static>(windowContacts==null?List.of():windowContacts.sample(player));exact=missing=skipped=0;
   if(RouteModes.world()){if(generated==null)generated=new NativeWorldContacts();for(var row:generated.sample(player)){if(result.size()>=64)break;result.add(row);}}
+  for(var cloth:PackCurtainCapture.contacts(player)){if(result.size()>=128)break;result.add(cloth);}
   int x=(int)Math.floor(player.getX()),y=(int)Math.floor(player.getY()),z=(int)Math.floor(player.getZ()),scanned=0,triangles=0;
   outer:for(int dx=-2;dx<=2;dx++)for(int dy=-2;dy<=2;dy++){
    var square=player.getCell().getGridSquare(x+dx,y+dy,z);if(square==null||!ChunkCache.packsOn(square))continue;
    var objects=square.getObjects();
    for(int index=0;index<objects.size();index++){
     if(++scanned>512||result.size()>=128)break outer;
-    var object=objects.get(index);if(object==null||object.getSquare()!=square||object.getSprite()==null||windowContacts!=null&&windowContacts.owns(object)||RouteModes.world()&&generated!=null&&generated.owns(object))continue;
+    var object=objects.get(index);if(object==null||object.getSquare()!=square||object.getSprite()==null||windowContacts!=null&&windowContacts.owns(object)||RouteModes.world()&&generated!=null&&generated.owns(object)||PackCurtainCapture.owns(object))continue;
     try{
      var observed=ShelfBridge.binding(object);var counter=CounterTapBindings.current(object);if(counter==null&&(CounterTapBindings.owns(object)||CounterTapBindings.potential(object))){if(!requestedCounters.contains(object)){if(requestedCounters.size()>=128)requestedCounters.clear();requestedCounters.add(object);object.getSquare().invalidateRenderChunkLevel(256L);}missing++;continue;}var binding=counter!=null?counter.binding():observed==null?ModelPacks.bind(object.getSprite()):observed.binding();if(binding==null)continue;
      int phase=binding.model.state();if(phase!=PackModel.READ&&phase!=PackModel.RESIDENT){missing++;continue;}
